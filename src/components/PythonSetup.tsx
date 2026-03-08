@@ -22,6 +22,10 @@ interface Props {
   onReady: () => void;
 }
 
+// Module-level flag to prevent double setup in React StrictMode.
+// Also check sessionStorage so HMR module reloads don't re-trigger setup.
+let setupStarted = !!sessionStorage.getItem("pythonSetupDone");
+
 export function PythonSetup({ onReady }: Props) {
   const [stage, setStage] = useState<SetupStage>("detect");
   const [percentage, setPercentage] = useState(0);
@@ -31,8 +35,8 @@ export function PythonSetup({ onReady }: Props) {
   const [backendUrl, setBackendUrl] = useState<string | null>(null);
   const [hasGpu, setHasGpu] = useState(false);
   const [pkgProgress, setPkgProgress] = useState<PackageProgress | null>(null);
-  const started = useRef(false);
   const logsEndRef = useRef<HTMLDivElement>(null);
+  const closedRef = useRef(false);
 
   const api = window.electronAPI?.python;
 
@@ -41,36 +45,53 @@ export function PythonSetup({ onReady }: Props) {
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
 
-  // Run the full automatic setup flow
+  // Register IPC listeners — always active while component is mounted.
+  // Separate from the setup effect so StrictMode cleanup doesn't kill them
+  // while the setup IPC is still running.
   useEffect(() => {
-    if (!api || started.current) return;
-    started.current = true;
+    if (!api) return;
 
-    // Listen for progress events from the main process
-    const cleanupProgress = api.onSetupProgress?.((data: { stage: string; percentage: number; message: string }) => {
+    const cleanupProgress = api.onSetupProgress((data: { stage: string; percentage: number; message: string }) => {
+      // Ignore "ready" from the setup IPC — the component handles the full
+      // flow (setup → start backend → GPU check → ready) in its own effect.
+      // Without this guard the dialog flashes "ready" then jumps back to "starting".
+      if (data.stage === "ready") return;
       setStage(data.stage as SetupStage);
       setPercentage(data.percentage);
       setMessage(data.message);
       setLogs((prev) => [...prev.slice(-200), data.message]);
     });
 
-    // Listen for raw install output
-    const cleanupInstall = api.onInstallProgress?.((output: string) => {
+    const cleanupInstall = api.onInstallProgress((output: string) => {
       setLogs((prev) => [...prev.slice(-200), output]);
     });
 
-    // Listen for per-package progress
-    const cleanupPkg = api.onInstallPackageProgress?.((data: PackageProgress) => {
+    const cleanupPkg = api.onInstallPackageProgress((data: PackageProgress) => {
       setPkgProgress(data);
       if (data.percentage > 0) {
         setPercentage(data.percentage);
       }
     });
 
+    return () => {
+      cleanupProgress();
+      cleanupInstall();
+      cleanupPkg();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [!!api]);
+
+  // Run the setup flow — guarded by module-level flag so it only runs once.
+  // No cleanup/cancelled flag: the IPC call survives StrictMode unmount/remount
+  // and state updates are fine because the component remounts immediately.
+  useEffect(() => {
+    if (!api || setupStarted) return;
+    setupStarted = true;
+
     (async () => {
       try {
-        // Step 1-3: Detect/download Python + install deps (all-in-one)
         await api.setup();
+        if (closedRef.current) return;
 
         // Step 4: Start backend server
         setStage("starting");
@@ -79,36 +100,40 @@ export function PythonSetup({ onReady }: Props) {
         setPkgProgress(null);
 
         const startResult = await api.start();
+        if (closedRef.current) return;
         setBackendUrl(startResult.url);
 
         // Check GPU status
         try {
           const status = await api.status();
-          setHasGpu(status.python?.hasCuda ?? false);
+          if (!closedRef.current) setHasGpu(status.python?.hasCuda ?? false);
         } catch {}
 
+        if (closedRef.current) return;
         setStage("ready");
         setMessage("Backend ready");
         setPercentage(100);
 
+        // Mark done immediately so HMR or re-renders won't reopen the dialog
+        sessionStorage.setItem("pythonSetupDone", "1");
+
         // Auto-proceed after a brief moment
-        setTimeout(onReady, 1200);
+        setTimeout(() => {
+          if (!closedRef.current) onReady();
+        }, 1200);
       } catch (err) {
+        if (closedRef.current) return;
         setStage("error");
         setError(err instanceof Error ? err.message : String(err));
         setMessage("Setup failed");
       }
     })();
-
-    return () => {
-      cleanupProgress?.();
-      cleanupInstall?.();
-      cleanupPkg?.();
-    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSkip = useCallback(() => {
+    closedRef.current = true;
+    sessionStorage.setItem("pythonSetupDone", "1");
     onReady();
   }, [onReady]);
 
@@ -146,7 +171,7 @@ export function PythonSetup({ onReady }: Props) {
   })();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90">
       <div className="w-[540px] rounded-xl border border-neutral-800 bg-neutral-900 shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-neutral-800 px-5 py-4">
