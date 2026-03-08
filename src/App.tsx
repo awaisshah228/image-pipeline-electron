@@ -51,7 +51,11 @@ function App() {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(pipelineName);
   const [showPythonSetup, setShowPythonSetup] = useState(
-    () => !!window.electronAPI?.python && !sessionStorage.getItem("pythonSetupDone")
+    () => {
+      const show = !!window.electronAPI?.python && !sessionStorage.getItem("pythonSetupDone");
+      console.log("[App] showPythonSetup init:", show, "electronAPI:", !!window.electronAPI?.python, "sessionDone:", sessionStorage.getItem("pythonSetupDone"));
+      return show;
+    }
   );
   const [warningDismissed, setWarningDismissed] = useState(false);
   const [templateOpen, setTemplateOpen] = useState(false);
@@ -238,8 +242,10 @@ function App() {
     setTemplateOpen(false);
   }, [nodes.length, importPipeline]);
 
-  if (!definitionsLoaded) {
-    return (
+  return (
+    <>
+    {/* Loading screen — shown until pipeline definitions are fetched */}
+    {!definitionsLoaded && (
       <div
         className="image-pipeline-root flex h-screen items-center justify-center"
         style={{ backgroundColor: "var(--background)" }}
@@ -251,10 +257,10 @@ function App() {
           </p>
         </div>
       </div>
-    );
-  }
+    )}
 
-  return (
+    {/* Main UI — rendered once definitions are loaded */}
+    {definitionsLoaded && (
     <ReactFlowProvider>
       <div className="image-pipeline-root flex h-screen flex-col bg-background">
         {/* macOS titlebar drag region */}
@@ -462,15 +468,18 @@ function App() {
         <PipelineRunDialog open={runOpen} onClose={() => setRunOpen(false)} />
         <AiModelManagerDialog open={aiModelsOpen} onClose={() => setAiModelsOpen(false)} />
 
-        {/* Python Backend Setup */}
-        {showPythonSetup && (
-          <PythonSetup onReady={() => {
-            sessionStorage.setItem("pythonSetupDone", "1");
-            setShowPythonSetup(false);
-          }} />
-        )}
       </div>
     </ReactFlowProvider>
+    )}
+
+    {/* Python setup — always at same tree position so it never remounts */}
+    {showPythonSetup && (
+      <PythonSetup onReady={() => {
+        sessionStorage.setItem("pythonSetupDone", "1");
+        setShowPythonSetup(false);
+      }} />
+    )}
+    </>
   );
 }
 
