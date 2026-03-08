@@ -22,6 +22,9 @@ interface Props {
   onReady: () => void;
 }
 
+// Module-level flag to prevent double setup in React StrictMode
+let setupStarted = false;
+
 export function PythonSetup({ onReady }: Props) {
   const [stage, setStage] = useState<SetupStage>("detect");
   const [percentage, setPercentage] = useState(0);
@@ -31,7 +34,6 @@ export function PythonSetup({ onReady }: Props) {
   const [backendUrl, setBackendUrl] = useState<string | null>(null);
   const [hasGpu, setHasGpu] = useState(false);
   const [pkgProgress, setPkgProgress] = useState<PackageProgress | null>(null);
-  const started = useRef(false);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   const api = window.electronAPI?.python;
@@ -43,8 +45,8 @@ export function PythonSetup({ onReady }: Props) {
 
   // Run the full automatic setup flow
   useEffect(() => {
-    if (!api || started.current) return;
-    started.current = true;
+    if (!api || setupStarted) return;
+    setupStarted = true;
 
     // Listen for progress events from the main process
     const cleanupProgress = api.onSetupProgress?.((data: { stage: string; percentage: number; message: string }) => {

@@ -50,7 +50,9 @@ function App() {
   const [runOpen, setRunOpen] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(pipelineName);
-  const [showPythonSetup, setShowPythonSetup] = useState(true);
+  const [showPythonSetup, setShowPythonSetup] = useState(
+    () => !!window.electronAPI?.python && !sessionStorage.getItem("pythonSetupDone")
+  );
   const [warningDismissed, setWarningDismissed] = useState(false);
   const [templateOpen, setTemplateOpen] = useState(false);
   const [aiModelsOpen, setAiModelsOpen] = useState(false);
@@ -462,7 +464,10 @@ function App() {
 
         {/* Python Backend Setup */}
         {showPythonSetup && (
-          <PythonSetup onReady={() => setShowPythonSetup(false)} />
+          <PythonSetup onReady={() => {
+            sessionStorage.setItem("pythonSetupDone", "1");
+            setShowPythonSetup(false);
+          }} />
         )}
       </div>
     </ReactFlowProvider>
