@@ -27,7 +27,6 @@ interface Props {
 let setupStarted = !!sessionStorage.getItem("pythonSetupDone");
 
 export function PythonSetup({ onReady }: Props) {
-  console.log("[PythonSetup] RENDER — setupStarted:", setupStarted, "sessionStorage:", sessionStorage.getItem("pythonSetupDone"));
   const [stage, setStage] = useState<SetupStage>("detect");
   const [percentage, setPercentage] = useState(0);
   const [message, setMessage] = useState("Looking for Python...");
@@ -86,15 +85,12 @@ export function PythonSetup({ onReady }: Props) {
   // No cleanup/cancelled flag: the IPC call survives StrictMode unmount/remount
   // and state updates are fine because the component remounts immediately.
   useEffect(() => {
-    console.log("[PythonSetup] useEffect — api:", !!api, "setupStarted:", setupStarted);
     if (!api || setupStarted) return;
     setupStarted = true;
 
     (async () => {
       try {
-        console.log("[PythonSetup] calling api.setup()...");
         await api.setup();
-        console.log("[PythonSetup] api.setup() done, closedRef:", closedRef.current);
         if (closedRef.current) return;
 
         // Step 4: Start backend server
@@ -103,21 +99,17 @@ export function PythonSetup({ onReady }: Props) {
         setPercentage(0);
         setPkgProgress(null);
 
-        console.log("[PythonSetup] calling api.start()...");
         const startResult = await api.start();
-        console.log("[PythonSetup] api.start() done, url:", startResult.url, "closedRef:", closedRef.current);
         if (closedRef.current) return;
         setBackendUrl(startResult.url);
 
         // Check GPU status
         try {
           const status = await api.status();
-          console.log("[PythonSetup] gpu status:", status.python?.hasCuda);
           if (!closedRef.current) setHasGpu(status.python?.hasCuda ?? false);
         } catch {}
 
         if (closedRef.current) return;
-        console.log("[PythonSetup] ALL DONE — setting ready");
         setStage("ready");
         setMessage("Backend ready");
         setPercentage(100);
@@ -127,11 +119,9 @@ export function PythonSetup({ onReady }: Props) {
 
         // Auto-proceed after a brief moment
         setTimeout(() => {
-          console.log("[PythonSetup] setTimeout firing onReady, closedRef:", closedRef.current);
           if (!closedRef.current) onReady();
         }, 1200);
       } catch (err) {
-        console.error("[PythonSetup] ERROR:", err);
         if (closedRef.current) return;
         setStage("error");
         setError(err instanceof Error ? err.message : String(err));

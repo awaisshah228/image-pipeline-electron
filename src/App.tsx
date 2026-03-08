@@ -51,11 +51,7 @@ function App() {
   const [editingName, setEditingName] = useState(false);
   const [nameInput, setNameInput] = useState(pipelineName);
   const [showPythonSetup, setShowPythonSetup] = useState(
-    () => {
-      const show = !!window.electronAPI?.python && !sessionStorage.getItem("pythonSetupDone");
-      console.log("[App] showPythonSetup init:", show, "electronAPI:", !!window.electronAPI?.python, "sessionDone:", sessionStorage.getItem("pythonSetupDone"));
-      return show;
-    }
+    () => !!window.electronAPI?.python && !sessionStorage.getItem("pythonSetupDone")
   );
   const [warningDismissed, setWarningDismissed] = useState(false);
   const [templateOpen, setTemplateOpen] = useState(false);
