@@ -2,6 +2,7 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { existsSync } from "node:fs";
 import path from "node:path";
+import { getIntegratedPythonExecutable } from "./integrated-python";
 
 const execFileAsync = promisify(execFile);
 
@@ -10,6 +11,8 @@ export interface PythonInfo {
   version: string;
   hasTorch: boolean;
   hasCuda: boolean;
+  /** Whether this is the integrated (bundled) Python, not the user's system Python */
+  isIntegrated: boolean;
 }
 
 /**
@@ -62,6 +65,12 @@ export async function detectPython(): Promise<PythonInfo | null> {
     }
   }
 
+  // Fall back to integrated Python (downloaded via python-build-standalone)
+  const integratedPath = getIntegratedPythonExecutable();
+  if (existsSync(integratedPath)) {
+    candidates.push(integratedPath);
+  }
+
   for (const candidate of candidates) {
     const info = await tryPython(candidate);
     if (info) return info;
@@ -105,11 +114,13 @@ print(json.dumps(info))
       return null;
     }
 
+    const integratedBin = getIntegratedPythonExecutable();
     return {
       path: info.path,
       version: info.version,
       hasTorch: info.has_torch,
       hasCuda: info.has_cuda,
+      isIntegrated: path.resolve(info.path) === path.resolve(integratedBin),
     };
   } catch {
     return null;

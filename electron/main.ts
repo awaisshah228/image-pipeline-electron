@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, dialog, shell, session } from "electron";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import fs from "node:fs/promises";
 import { registerFileSystemHandlers, registerFfmpegHandlers } from "./ipc/file-system";
 import { registerModelHandlers } from "./ipc/model-loader";
@@ -101,6 +102,27 @@ function registerIpcHandlers() {
 }
 
 app.whenReady().then(() => {
+  // In production, register a custom "app" protocol that serves files from
+  // the dist directory so the renderer can fetch static assets.
+  if (!VITE_DEV_SERVER_URL) {
+    const distDir = process.env.DIST!;
+    const staticPrefixes = ["/image-pipeline-nodes", "/nodes", "/canvas-icons", "/assets"];
+
+    session.defaultSession.webRequest.onBeforeRequest(
+      { urls: ["file:///*"] },
+      (details, callback) => {
+        const url = new URL(details.url);
+        const filePath = decodeURIComponent(url.pathname);
+
+        if (staticPrefixes.some((p) => filePath.startsWith(p))) {
+          callback({ redirectURL: pathToFileURL(path.join(distDir, filePath)).href });
+        } else {
+          callback({});
+        }
+      }
+    );
+  }
+
   // Grant camera/microphone permissions automatically
   session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
     const allowed = ["media", "mediaKeySystem", "display-capture"];
