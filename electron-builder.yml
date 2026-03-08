@@ -10,6 +10,16 @@ files:
   # Include ONNX Runtime native bindings
   - node_modules/onnxruntime-node/**
 extraResources:
+  # Python backend source code (spawned as subprocess at runtime)
+  - from: python-backend/src
+    to: python-backend/src
+    filter:
+      - "**/*.py"
+      - "!**/__pycache__"
+      - "!**/*.pyc"
+  # Python requirements for pip install on first launch
+  - from: python-backend/requirements.txt
+    to: python-backend/requirements.txt
   # Models directory for ONNX models
   - from: public/models
     to: models
