@@ -1,0 +1,14 @@
+{
+  "categories": [
+    { "name": "input", "display_name": "Input", "icon": "FileDown", "file": "input.json" },
+    { "name": "output", "display_name": "Output", "icon": "FileUp", "file": "output.json" },
+    { "name": "image_adjust", "display_name": "Image Adjust", "icon": "SlidersHorizontal", "file": "image_adjust.json" },
+    { "name": "image_filter", "display_name": "Image Filter", "icon": "Sparkles", "file": "image_filter.json" },
+    { "name": "image_transform", "display_name": "Image Transform", "icon": "Move", "file": "image_transform.json" },
+    { "name": "ai_upscale", "display_name": "AI Upscale", "icon": "Zap", "file": "ai_upscale.json" },
+    { "name": "ai_enhance", "display_name": "AI Enhance", "icon": "Brain", "file": "ai_enhance.json" },
+    { "name": "computer_vision", "display_name": "Computer Vision", "icon": "ScanFace", "file": "computer_vision.json" },
+    { "name": "utility", "display_name": "Utility", "icon": "Wrench", "file": "utility.json" },
+    { "name": "batch", "display_name": "Batch", "icon": "FolderOpen", "file": "batch.json" }
+  ]
+}

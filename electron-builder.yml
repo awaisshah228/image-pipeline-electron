@@ -1,0 +1,48 @@
+appId: com.imagepipeline.desktop
+productName: Image Pipeline
+directories:
+  buildResources: build
+  output: release
+files:
+  - dist-electron
+  - dist
+  - public
+  # Include ONNX Runtime native bindings
+  - node_modules/onnxruntime-node/**
+extraResources:
+  # Models directory for ONNX models
+  - from: public/models
+    to: models
+    filter:
+      - "**/*"
+  # OpenCV WASM
+  - from: public/opencv.js
+    to: opencv.js
+  # Node definition JSON files
+  - from: public/image-pipeline-nodes
+    to: image-pipeline-nodes
+mac:
+  category: public.app-category.developer-tools
+  target:
+    - target: dmg
+      arch:
+        - arm64
+        - x64
+  hardenedRuntime: true
+  gatekeeperAssess: false
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: "${productName}-${version}-Setup.${ext}"
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+  category: Development
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true

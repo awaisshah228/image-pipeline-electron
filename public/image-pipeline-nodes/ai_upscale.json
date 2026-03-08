@@ -1,0 +1,180 @@
+[
+  {
+    "type": "upscale_image",
+    "display_name": "Upscale Image",
+    "description": "Upscale image using AI model",
+    "icon": "ArrowUpFromLine",
+    "category": "ai_upscale",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "model",
+        "display_name": "Model",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Model"]
+      },
+      {
+        "name": "tile_size",
+        "display_name": "Tile Size",
+        "type": "int",
+        "required": false,
+        "show": true,
+        "value": 512,
+        "info": "Process in tiles (0 = no tiling)"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "upscale_2x",
+    "display_name": "Quick Upscale 2x",
+    "description": "Fast 2x upscale with built-in Real-ESRGAN",
+    "icon": "Zap",
+    "category": "ai_upscale",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "denoise_strength",
+        "display_name": "Denoise Strength",
+        "type": "float",
+        "required": false,
+        "show": true,
+        "value": 0.5,
+        "info": "0 = no denoising, 1 = max"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "upscale_4x",
+    "display_name": "Quick Upscale 4x",
+    "description": "Fast 4x upscale with built-in Real-ESRGAN",
+    "icon": "Zap",
+    "category": "ai_upscale",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "denoise_strength",
+        "display_name": "Denoise Strength",
+        "type": "float",
+        "required": false,
+        "show": true,
+        "value": 0.5,
+        "info": "0 = no denoising, 1 = max"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "face_upscale",
+    "display_name": "Face Upscale",
+    "description": "Upscale and enhance faces using GFPGAN/CodeFormer",
+    "icon": "UserCheck",
+    "category": "ai_upscale",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "method",
+        "display_name": "Method",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["GFPGAN", "CodeFormer", "RestoreFormer"],
+        "value": "CodeFormer"
+      },
+      {
+        "name": "fidelity",
+        "display_name": "Fidelity Weight",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 0.5,
+        "info": "0 = quality, 1 = fidelity"
+      },
+      {
+        "name": "bg_upscale",
+        "display_name": "Upscale Background",
+        "type": "bool",
+        "required": false,
+        "show": true,
+        "value": true
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "interpolate_models",
+    "display_name": "Interpolate Models",
+    "description": "Blend two model weights together",
+    "icon": "Blend",
+    "category": "ai_upscale",
+    "inputs": [
+      {
+        "name": "model_a",
+        "display_name": "Model A",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Model"]
+      },
+      {
+        "name": "model_b",
+        "display_name": "Model B",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Model"]
+      },
+      {
+        "name": "weight",
+        "display_name": "Weight (A vs B)",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 50,
+        "info": "0 = Model A, 100 = Model B"
+      }
+    ],
+    "outputs": [
+      { "name": "model", "display_name": "Model", "types": ["Model"] }
+    ]
+  }
+]

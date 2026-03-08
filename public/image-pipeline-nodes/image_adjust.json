@@ -1,0 +1,250 @@
+[
+  {
+    "type": "brightness_contrast",
+    "display_name": "Brightness & Contrast",
+    "description": "Adjust image brightness and contrast",
+    "icon": "Sun",
+    "category": "image_adjust",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "brightness",
+        "display_name": "Brightness",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 0,
+        "info": "Range: -100 to 100"
+      },
+      {
+        "name": "contrast",
+        "display_name": "Contrast",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 0,
+        "info": "Range: -100 to 100"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "hue_saturation",
+    "display_name": "Hue & Saturation",
+    "description": "Adjust hue, saturation, and lightness",
+    "icon": "Palette",
+    "category": "image_adjust",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "hue",
+        "display_name": "Hue",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 0,
+        "info": "Range: -180 to 180"
+      },
+      {
+        "name": "saturation",
+        "display_name": "Saturation",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 0,
+        "info": "Range: -100 to 100"
+      },
+      {
+        "name": "lightness",
+        "display_name": "Lightness",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 0,
+        "info": "Range: -100 to 100"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "color_balance",
+    "display_name": "Color Balance",
+    "description": "Adjust RGB color channels independently",
+    "icon": "SlidersHorizontal",
+    "category": "image_adjust",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "red",
+        "display_name": "Red",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 0,
+        "info": "Range: -100 to 100"
+      },
+      {
+        "name": "green",
+        "display_name": "Green",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 0,
+        "info": "Range: -100 to 100"
+      },
+      {
+        "name": "blue",
+        "display_name": "Blue",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 0,
+        "info": "Range: -100 to 100"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "levels",
+    "display_name": "Levels",
+    "description": "Adjust input/output levels",
+    "icon": "BarChart3",
+    "category": "image_adjust",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "input_low",
+        "display_name": "Input Low",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 0,
+        "info": "0-255"
+      },
+      {
+        "name": "input_high",
+        "display_name": "Input High",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 255,
+        "info": "0-255"
+      },
+      {
+        "name": "gamma",
+        "display_name": "Gamma",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 1.0,
+        "info": "0.1-10"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "invert",
+    "display_name": "Invert Colors",
+    "description": "Invert all color channels",
+    "icon": "RefreshCw",
+    "category": "image_adjust",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "grayscale",
+    "display_name": "Grayscale",
+    "description": "Convert image to grayscale",
+    "icon": "Moon",
+    "category": "image_adjust",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "opacity",
+    "display_name": "Opacity",
+    "description": "Adjust image opacity/alpha",
+    "icon": "Eye",
+    "category": "image_adjust",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "opacity",
+        "display_name": "Opacity",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 100,
+        "info": "0-100%"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  }
+]

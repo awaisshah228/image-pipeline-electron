@@ -1,0 +1,228 @@
+[
+  {
+    "type": "blur",
+    "display_name": "Blur",
+    "description": "Apply blur filter",
+    "icon": "Wind",
+    "category": "image_filter",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "blur_type",
+        "display_name": "Type",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["Gaussian", "Box", "Motion", "Median"],
+        "value": "Gaussian"
+      },
+      {
+        "name": "radius",
+        "display_name": "Radius",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 5,
+        "info": "Blur radius in pixels"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "sharpen",
+    "display_name": "Sharpen",
+    "description": "Sharpen image details",
+    "icon": "Zap",
+    "category": "image_filter",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "amount",
+        "display_name": "Amount",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 50,
+        "info": "Sharpening strength (0-200)"
+      },
+      {
+        "name": "radius",
+        "display_name": "Radius",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 1,
+        "info": "Sharpening radius"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "denoise",
+    "display_name": "Denoise",
+    "description": "Remove noise from image",
+    "icon": "Eraser",
+    "category": "image_filter",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "strength",
+        "display_name": "Strength",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 10,
+        "info": "Denoising strength (1-50)"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "edge_detect",
+    "display_name": "Edge Detection",
+    "description": "Detect edges using Canny/Sobel",
+    "icon": "Scan",
+    "category": "image_filter",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "method",
+        "display_name": "Method",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["Canny", "Sobel", "Laplacian"],
+        "value": "Canny"
+      },
+      {
+        "name": "threshold",
+        "display_name": "Threshold",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 100
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "threshold",
+    "display_name": "Threshold",
+    "description": "Apply threshold to create binary image",
+    "icon": "Binary",
+    "category": "image_filter",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "threshold_value",
+        "display_name": "Threshold",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 128,
+        "info": "0-255"
+      },
+      {
+        "name": "type",
+        "display_name": "Type",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["Binary", "Binary Inv", "Adaptive", "Otsu"],
+        "value": "Binary"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "blend",
+    "display_name": "Blend Images",
+    "description": "Blend two images together",
+    "icon": "Layers",
+    "category": "image_filter",
+    "inputs": [
+      {
+        "name": "image_a",
+        "display_name": "Image A",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "image_b",
+        "display_name": "Image B",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "mode",
+        "display_name": "Blend Mode",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["Normal", "Multiply", "Screen", "Overlay", "Soft Light", "Hard Light", "Difference", "Add", "Subtract"],
+        "value": "Normal"
+      },
+      {
+        "name": "opacity",
+        "display_name": "Opacity",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 50,
+        "info": "Blend opacity (0-100)"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  }
+]

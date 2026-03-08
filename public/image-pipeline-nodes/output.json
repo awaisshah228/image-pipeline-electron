@@ -1,0 +1,125 @@
+[
+  {
+    "type": "save_image",
+    "display_name": "Save Image",
+    "description": "Save image to file",
+    "icon": "Download",
+    "category": "output",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "filename",
+        "display_name": "Filename",
+        "type": "str",
+        "required": true,
+        "show": true,
+        "placeholder": "output",
+        "value": "output"
+      },
+      {
+        "name": "format",
+        "display_name": "Format",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["PNG", "JPEG", "WebP", "TIFF", "BMP"],
+        "value": "PNG"
+      },
+      {
+        "name": "quality",
+        "display_name": "Quality",
+        "type": "int",
+        "required": false,
+        "show": true,
+        "value": 95,
+        "info": "Quality for lossy formats (1-100)"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "preview_image",
+    "display_name": "Preview Image",
+    "description": "Preview image in the editor",
+    "icon": "Eye",
+    "category": "output",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "image_info",
+    "display_name": "Image Info",
+    "description": "Display image dimensions and metadata",
+    "icon": "Info",
+    "category": "output",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      }
+    ],
+    "outputs": [
+      { "name": "width", "display_name": "Width", "types": ["Number"] },
+      { "name": "height", "display_name": "Height", "types": ["Number"] },
+      { "name": "channels", "display_name": "Channels", "types": ["Number"] },
+      { "name": "format", "display_name": "Format", "types": ["Text"] }
+    ]
+  },
+  {
+    "type": "number_display",
+    "display_name": "Number Display",
+    "description": "Display a numeric value from the pipeline",
+    "icon": "Hash",
+    "category": "output",
+    "inputs": [
+      {
+        "name": "value",
+        "display_name": "Value",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 0,
+        "input_types": ["Number"]
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "image_gallery",
+    "display_name": "Image Gallery",
+    "description": "Display multiple images in a grid (e.g. detected faces)",
+    "icon": "Grid3X3",
+    "category": "output",
+    "inputs": [
+      {
+        "name": "images",
+        "display_name": "Images",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["ImageList"]
+      }
+    ],
+    "outputs": []
+  }
+]

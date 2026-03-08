@@ -1,0 +1,304 @@
+[
+  {
+    "type": "resize",
+    "display_name": "Resize",
+    "description": "Resize image to specified dimensions",
+    "icon": "Maximize2",
+    "category": "image_transform",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "width",
+        "display_name": "Width",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 512,
+        "input_types": ["Number"]
+      },
+      {
+        "name": "height",
+        "display_name": "Height",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 512,
+        "input_types": ["Number"]
+      },
+      {
+        "name": "interpolation",
+        "display_name": "Interpolation",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["Nearest", "Bilinear", "Bicubic", "Lanczos"],
+        "value": "Lanczos"
+      },
+      {
+        "name": "keep_aspect",
+        "display_name": "Keep Aspect Ratio",
+        "type": "bool",
+        "required": false,
+        "show": true,
+        "value": true
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "crop",
+    "display_name": "Crop",
+    "description": "Crop a region from the image",
+    "icon": "Crop",
+    "category": "image_transform",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "x",
+        "display_name": "X",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 0
+      },
+      {
+        "name": "y",
+        "display_name": "Y",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 0
+      },
+      {
+        "name": "width",
+        "display_name": "Width",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 256,
+        "input_types": ["Number"]
+      },
+      {
+        "name": "height",
+        "display_name": "Height",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 256,
+        "input_types": ["Number"]
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "rotate",
+    "display_name": "Rotate",
+    "description": "Rotate image by degrees",
+    "icon": "RotateCw",
+    "category": "image_transform",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "angle",
+        "display_name": "Angle",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 90,
+        "info": "Rotation angle in degrees",
+        "input_types": ["Number"]
+      },
+      {
+        "name": "expand",
+        "display_name": "Expand Canvas",
+        "type": "bool",
+        "required": false,
+        "show": true,
+        "value": true
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "flip",
+    "display_name": "Flip",
+    "description": "Flip image horizontally or vertically",
+    "icon": "FlipHorizontal2",
+    "category": "image_transform",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "direction",
+        "display_name": "Direction",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["Horizontal", "Vertical", "Both"],
+        "value": "Horizontal"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "pad",
+    "display_name": "Pad / Border",
+    "description": "Add padding/border around image",
+    "icon": "Square",
+    "category": "image_transform",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "top",
+        "display_name": "Top",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 0
+      },
+      {
+        "name": "bottom",
+        "display_name": "Bottom",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 0
+      },
+      {
+        "name": "left",
+        "display_name": "Left",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 0
+      },
+      {
+        "name": "right",
+        "display_name": "Right",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 0
+      },
+      {
+        "name": "fill_color",
+        "display_name": "Fill Color",
+        "type": "str",
+        "required": false,
+        "show": true,
+        "value": "#000000"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "tile_split",
+    "display_name": "Tile / Split",
+    "description": "Split image into tiles for batch processing",
+    "icon": "Grid3x3",
+    "category": "image_transform",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "tile_size",
+        "display_name": "Tile Size",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 512
+      },
+      {
+        "name": "overlap",
+        "display_name": "Overlap",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 32
+      }
+    ],
+    "outputs": [
+      { "name": "tiles", "display_name": "Tiles", "types": ["ImageList"] },
+      { "name": "tile_count", "display_name": "Count", "types": ["Number"] }
+    ]
+  },
+  {
+    "type": "tile_merge",
+    "display_name": "Tile Merge",
+    "description": "Merge tiles back into a single image",
+    "icon": "Combine",
+    "category": "image_transform",
+    "inputs": [
+      {
+        "name": "tiles",
+        "display_name": "Tiles",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["ImageList"]
+      },
+      {
+        "name": "columns",
+        "display_name": "Columns",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 2,
+        "input_types": ["Number"]
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  }
+]

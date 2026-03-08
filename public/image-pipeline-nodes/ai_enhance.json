@@ -1,0 +1,173 @@
+[
+  {
+    "type": "bg_remove",
+    "display_name": "Remove Background",
+    "description": "Remove image background using AI",
+    "icon": "Scissors",
+    "category": "ai_enhance",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "model",
+        "display_name": "Model",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["rembg (u2net)", "rembg (isnet)", "SAM"],
+        "value": "rembg (u2net)"
+      },
+      {
+        "name": "alpha_matting",
+        "display_name": "Alpha Matting",
+        "type": "bool",
+        "required": false,
+        "show": true,
+        "value": false,
+        "info": "Better edge quality, slower"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] },
+      { "name": "mask", "display_name": "Mask", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "style_transfer",
+    "display_name": "Style Transfer",
+    "description": "Apply artistic style from reference image",
+    "icon": "Paintbrush",
+    "category": "ai_enhance",
+    "inputs": [
+      {
+        "name": "content_image",
+        "display_name": "Content Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "style_image",
+        "display_name": "Style Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "strength",
+        "display_name": "Style Strength",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 75,
+        "info": "0-100"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "colorize",
+    "display_name": "Colorize",
+    "description": "Add color to grayscale images using AI",
+    "icon": "Palette",
+    "category": "ai_enhance",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "saturation",
+        "display_name": "Saturation",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 1.0,
+        "info": "Color saturation multiplier"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "depth_map",
+    "display_name": "Depth Map",
+    "description": "Generate depth map using MiDaS/Depth Anything",
+    "icon": "Mountain",
+    "category": "ai_enhance",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "model",
+        "display_name": "Model",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["MiDaS Small", "MiDaS Large", "Depth Anything V2"],
+        "value": "Depth Anything V2"
+      }
+    ],
+    "outputs": [
+      { "name": "depth_map", "display_name": "Depth Map", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "inpaint",
+    "display_name": "Inpaint",
+    "description": "Fill masked regions using AI",
+    "icon": "PaintBucket",
+    "category": "ai_enhance",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "mask",
+        "display_name": "Mask",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "prompt",
+        "display_name": "Prompt",
+        "type": "str",
+        "required": false,
+        "show": true,
+        "placeholder": "Describe what to fill...",
+        "multiline": true
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  }
+]

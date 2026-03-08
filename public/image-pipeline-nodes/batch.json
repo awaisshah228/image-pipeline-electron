@@ -1,0 +1,240 @@
+[
+  {
+    "type": "batch_load",
+    "display_name": "Batch Load Images",
+    "description": "Load all images from a directory",
+    "icon": "FolderOpen",
+    "category": "batch",
+    "inputs": [
+      {
+        "name": "directory",
+        "display_name": "Directory Path",
+        "type": "str",
+        "required": true,
+        "show": true,
+        "placeholder": "/path/to/images"
+      },
+      {
+        "name": "pattern",
+        "display_name": "File Pattern",
+        "type": "str",
+        "required": false,
+        "show": true,
+        "value": "*.png",
+        "info": "Glob pattern (e.g. *.png, *.jpg)"
+      },
+      {
+        "name": "recursive",
+        "display_name": "Recursive",
+        "type": "bool",
+        "required": false,
+        "show": true,
+        "value": false
+      }
+    ],
+    "outputs": [
+      { "name": "images", "display_name": "Images", "types": ["ImageList"] },
+      { "name": "filenames", "display_name": "Filenames", "types": ["TextList"] },
+      { "name": "count", "display_name": "Count", "types": ["Number"] }
+    ]
+  },
+  {
+    "type": "batch_save",
+    "display_name": "Batch Save Images",
+    "description": "Save a list of images to a directory",
+    "icon": "FolderDown",
+    "category": "batch",
+    "inputs": [
+      {
+        "name": "images",
+        "display_name": "Images",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["ImageList", "Image"]
+      },
+      {
+        "name": "directory",
+        "display_name": "Output Directory",
+        "type": "str",
+        "required": true,
+        "show": true,
+        "placeholder": "/path/to/output"
+      },
+      {
+        "name": "prefix",
+        "display_name": "Filename Prefix",
+        "type": "str",
+        "required": false,
+        "show": true,
+        "value": "output_"
+      },
+      {
+        "name": "format",
+        "display_name": "Format",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["PNG", "JPEG", "WebP"],
+        "value": "PNG"
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "iterator",
+    "display_name": "Iterator",
+    "description": "Iterate over an image list one by one",
+    "icon": "Repeat",
+    "category": "batch",
+    "inputs": [
+      {
+        "name": "images",
+        "display_name": "Images",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["ImageList"]
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Current Image", "types": ["Image"] },
+      { "name": "index", "display_name": "Index", "types": ["Number"] },
+      { "name": "filename", "display_name": "Filename", "types": ["Text"] }
+    ]
+  },
+  {
+    "type": "collector",
+    "display_name": "Collector",
+    "description": "Collect individual images into a list",
+    "icon": "ListPlus",
+    "category": "batch",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      }
+    ],
+    "outputs": [
+      { "name": "images", "display_name": "Images", "types": ["ImageList"] }
+    ]
+  },
+  {
+    "type": "video_load",
+    "display_name": "Load Video Frames",
+    "description": "Extract frames from a video file",
+    "icon": "Video",
+    "category": "batch",
+    "inputs": [
+      {
+        "name": "file",
+        "display_name": "Video File",
+        "type": "file",
+        "required": true,
+        "show": true,
+        "file_types": [".mp4", ".avi", ".mkv", ".mov", ".webm"]
+      },
+      {
+        "name": "fps",
+        "display_name": "Extract FPS",
+        "type": "int",
+        "required": false,
+        "show": true,
+        "value": 0,
+        "info": "0 = original FPS"
+      },
+      {
+        "name": "max_frames",
+        "display_name": "Max Frames",
+        "type": "int",
+        "required": false,
+        "show": true,
+        "value": 0,
+        "info": "0 = all frames"
+      },
+      {
+        "name": "max_resolution",
+        "display_name": "Max Resolution",
+        "type": "dropdown",
+        "required": false,
+        "show": true,
+        "options": ["Original", "1280", "960", "640", "480", "320"],
+        "value": "Original",
+        "info": "Downscale frames to save memory. 640 recommended for YOLO"
+      },
+      {
+        "name": "cache_to_disk",
+        "display_name": "Cache Frames to Disk",
+        "type": "bool",
+        "required": false,
+        "show": true,
+        "value": false,
+        "info": "Save frames to a local folder to reduce browser memory (Chrome/Edge only)"
+      }
+    ],
+    "outputs": [
+      { "name": "frames", "display_name": "Frames", "types": ["ImageList"] },
+      { "name": "fps", "display_name": "FPS", "types": ["Number"] },
+      { "name": "frame_count", "display_name": "Frame Count", "types": ["Number"] }
+    ]
+  },
+  {
+    "type": "video_save",
+    "display_name": "Save Video",
+    "description": "Combine frames into a video file. Set output directory to auto-save.",
+    "icon": "Film",
+    "category": "batch",
+    "inputs": [
+      {
+        "name": "frames",
+        "display_name": "Frames",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["ImageList", "Image"]
+      },
+      {
+        "name": "fps",
+        "display_name": "FPS",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 30,
+        "input_types": ["Number"]
+      },
+      {
+        "name": "codec",
+        "display_name": "Codec",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["H264", "VP9", "VP8"],
+        "value": "H264",
+        "info": "H264 = MP4 (recommended), VP9/VP8 = WebM"
+      },
+      {
+        "name": "filename",
+        "display_name": "Filename",
+        "type": "str",
+        "required": true,
+        "show": true,
+        "value": "output",
+        "placeholder": "output"
+      },
+      {
+        "name": "output_dir",
+        "display_name": "Output Directory",
+        "type": "str",
+        "required": false,
+        "show": true,
+        "placeholder": "Click browse or paste path",
+        "info": "Auto-saves here when capture stops. Leave empty to choose each time."
+      }
+    ],
+    "outputs": []
+  }
+]

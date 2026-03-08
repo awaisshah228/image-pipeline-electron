@@ -1,0 +1,586 @@
+[
+  {
+    "type": "face_detect_cv",
+    "display_name": "Face Detection (OpenCV)",
+    "description": "Detect faces using Haar cascade classifier. Draws green boxes around detected faces. Loads OpenCV WASM (~8MB) on first use.",
+    "icon": "ScanFace",
+    "category": "computer_vision",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Annotated", "types": ["Image"] },
+      { "name": "count", "display_name": "Face Count", "types": ["Number"] },
+      { "name": "faces", "display_name": "Faces", "types": ["ImageList"] }
+    ]
+  },
+  {
+    "type": "contour_detect",
+    "display_name": "Contour Detection",
+    "description": "Find and draw contours in image",
+    "icon": "Scan",
+    "category": "computer_vision",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "threshold",
+        "display_name": "Threshold",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 128
+      },
+      {
+        "name": "min_area",
+        "display_name": "Min Area",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 100,
+        "info": "Minimum contour area to display"
+      },
+      {
+        "name": "draw_mode",
+        "display_name": "Draw Mode",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["Outline", "Filled", "Black Background"],
+        "value": "Outline"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Contours", "types": ["Image"] },
+      { "name": "count", "display_name": "Count", "types": ["Number"] }
+    ]
+  },
+  {
+    "type": "canny_edge",
+    "display_name": "Canny Edge (OpenCV)",
+    "description": "Advanced edge detection with Canny algorithm",
+    "icon": "Zap",
+    "category": "computer_vision",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "low_threshold",
+        "display_name": "Low Threshold",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 50
+      },
+      {
+        "name": "high_threshold",
+        "display_name": "High Threshold",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 150
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Edges", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "histogram_eq",
+    "display_name": "Histogram Equalization",
+    "description": "Enhance contrast via histogram equalization",
+    "icon": "BarChart3",
+    "category": "computer_vision",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Enhanced", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "morphology",
+    "display_name": "Morphology",
+    "description": "Morphological operations (dilate, erode, open, close)",
+    "icon": "Layers",
+    "category": "computer_vision",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "operation",
+        "display_name": "Operation",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["Dilate", "Erode", "Open", "Close", "Gradient"],
+        "value": "Dilate"
+      },
+      {
+        "name": "kernel_size",
+        "display_name": "Kernel Size",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 5
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Result", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "color_space",
+    "display_name": "Color Space",
+    "description": "Convert between color spaces (HSV, LAB, Grayscale)",
+    "icon": "Palette",
+    "category": "computer_vision",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "color_space",
+        "display_name": "Color Space",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["Grayscale", "HSV", "LAB"],
+        "value": "Grayscale"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Converted", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "adaptive_threshold",
+    "display_name": "Adaptive Threshold",
+    "description": "Threshold with adaptive local computation",
+    "icon": "Binary",
+    "category": "computer_vision",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "block_size",
+        "display_name": "Block Size",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 11
+      },
+      {
+        "name": "constant",
+        "display_name": "Constant (C)",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 2
+      },
+      {
+        "name": "method",
+        "display_name": "Method",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["Gaussian", "Mean"],
+        "value": "Gaussian"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Thresholded", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "color_detect",
+    "display_name": "Color Detection",
+    "description": "Detect and isolate a specific color in the image",
+    "icon": "Paintbrush",
+    "category": "computer_vision",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "target_color",
+        "display_name": "Target Color",
+        "type": "str",
+        "required": true,
+        "show": true,
+        "value": "#ff0000",
+        "placeholder": "#ff0000"
+      },
+      {
+        "name": "tolerance",
+        "display_name": "Tolerance",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 30,
+        "info": "Hue tolerance for color matching (0-180)"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Detected", "types": ["Image"] },
+      { "name": "percentage", "display_name": "Percentage", "types": ["Number"] }
+    ]
+  },
+  {
+    "type": "bilateral_filter",
+    "display_name": "Bilateral Filter",
+    "description": "Edge-preserving noise reduction filter",
+    "icon": "Wind",
+    "category": "computer_vision",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "diameter",
+        "display_name": "Diameter",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 9
+      },
+      {
+        "name": "sigma_color",
+        "display_name": "Sigma Color",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 75
+      },
+      {
+        "name": "sigma_space",
+        "display_name": "Sigma Space",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 75
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Filtered", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "video_frame",
+    "display_name": "Video Frame Extract",
+    "description": "Extract a single frame from a video file",
+    "icon": "Film",
+    "category": "computer_vision",
+    "inputs": [
+      {
+        "name": "file",
+        "display_name": "Video File",
+        "type": "file",
+        "required": true,
+        "show": true,
+        "file_types": [".mp4", ".webm", ".ogg", ".mov", ".avi"]
+      },
+      {
+        "name": "time",
+        "display_name": "Time (seconds)",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 0,
+        "info": "Time position in seconds to extract frame from"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Frame", "types": ["Image"] },
+      { "name": "width", "display_name": "Width", "types": ["Number"] },
+      { "name": "height", "display_name": "Height", "types": ["Number"] }
+    ]
+  },
+  {
+    "type": "webcam_capture",
+    "display_name": "Webcam / Stream Capture",
+    "description": "Capture frames from webcam or video stream URL. Supports live YOLO detection on each frame.",
+    "icon": "Video",
+    "category": "computer_vision",
+    "inputs": [
+      {
+        "name": "source",
+        "display_name": "Source",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["Webcam", "Stream URL"],
+        "value": "Webcam",
+        "info": "Select webcam for local camera or Stream URL for HLS/MJPEG streams."
+      },
+      {
+        "name": "stream_url",
+        "display_name": "Stream URL",
+        "type": "str",
+        "required": false,
+        "show": true,
+        "placeholder": "http://camera-ip/stream or .m3u8 URL",
+        "info": "URL for HLS (.m3u8), MJPEG, or MP4 stream. Only used when Source is 'Stream URL'."
+      },
+      {
+        "name": "capture_fps",
+        "display_name": "Capture FPS",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 2,
+        "info": "How many frames per second to capture and process. Lower = less CPU. Max 30."
+      },
+      {
+        "name": "max_frames",
+        "display_name": "Max Frames",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 0,
+        "info": "Stop after this many frames. Set 0 for continuous (manual stop)."
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Current Frame", "types": ["Image"] },
+      { "name": "frames", "display_name": "All Frames", "types": ["ImageList"] },
+      { "name": "count", "display_name": "Frame Count", "types": ["Number"] }
+    ]
+  },
+  {
+    "type": "people_detect",
+    "display_name": "People Detection (OpenCV)",
+    "description": "Detect people using HOG descriptor + SVM. No model download needed.",
+    "icon": "UserCheck",
+    "category": "computer_vision",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Annotated", "types": ["Image"] },
+      { "name": "count", "display_name": "Count", "types": ["Number"] },
+      { "name": "objects", "display_name": "Objects", "types": ["ImageList"] }
+    ]
+  },
+  {
+    "type": "cascade_detect",
+    "display_name": "Cascade Detector",
+    "description": "Detect objects using a custom Haar/LBP cascade XML. Provide a URL to any cascade file.",
+    "icon": "Scan",
+    "category": "computer_vision",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "cascade_url",
+        "display_name": "Cascade XML URL",
+        "type": "str",
+        "required": true,
+        "show": true,
+        "placeholder": "https://raw.githubusercontent.com/.../haarcascade_eye.xml",
+        "info": "URL to a Haar or LBP cascade XML file"
+      },
+      {
+        "name": "label",
+        "display_name": "Label",
+        "type": "str",
+        "required": true,
+        "show": true,
+        "value": "object",
+        "placeholder": "eye"
+      },
+      {
+        "name": "scale_factor",
+        "display_name": "Scale Factor",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 1.1,
+        "info": "Image scale factor for multi-scale detection (1.01-1.5)"
+      },
+      {
+        "name": "min_neighbors",
+        "display_name": "Min Neighbors",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 3,
+        "info": "Minimum neighbor detections to keep (higher = fewer false positives)"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Annotated", "types": ["Image"] },
+      { "name": "count", "display_name": "Count", "types": ["Number"] },
+      { "name": "objects", "display_name": "Objects", "types": ["ImageList"] }
+    ]
+  },
+  {
+    "type": "yolo_detect",
+    "display_name": "YOLO Object Detection",
+    "description": "Run YOLO object detection via Python backend (Ultralytics). Supports YOLOv5/v8/v11 models — auto-downloads on first use.",
+    "icon": "Brain",
+    "category": "computer_vision",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "model_url",
+        "display_name": "Model",
+        "type": "model_file",
+        "required": true,
+        "show": true,
+        "value": "yolov8n.pt",
+        "placeholder": "yolov8n.pt, yolov8s.pt, yolo11n.pt, etc.",
+        "file_types": [".pt", ".onnx"],
+        "info": "Ultralytics model name (auto-downloads) or local .pt/.onnx path. Models: yolov8n/s/m/l/x.pt"
+      },
+      {
+        "name": "api_key",
+        "display_name": "API Key / Token",
+        "type": "password",
+        "required": false,
+        "show": true,
+        "placeholder": "hf_... or Bearer token",
+        "info": "Optional auth token for gated remote models (e.g. HuggingFace). Not needed for local/uploaded models."
+      },
+      {
+        "name": "confidence",
+        "display_name": "Confidence",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 0.25,
+        "info": "Minimum detection confidence (0-1)"
+      },
+      {
+        "name": "input_size",
+        "display_name": "Input Size",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["320", "416", "640"],
+        "value": "640",
+        "info": "Model input resolution. Must match model training size."
+      },
+      {
+        "name": "custom_labels",
+        "display_name": "Custom Class Labels",
+        "type": "str",
+        "required": false,
+        "show": true,
+        "multiline": true,
+        "placeholder": "e.g. helmet, vest, goggles, gloves\n(comma-separated, one per output class)",
+        "info": "Custom class labels for non-COCO models. Comma-separated, in order of model output classes. Leave empty to use default COCO 80 classes."
+      },
+      {
+        "name": "class_names",
+        "display_name": "Filter Classes",
+        "type": "tags",
+        "required": false,
+        "show": true,
+        "placeholder": "Type to filter classes...",
+        "info": "Filter which classes to display. Options update based on custom labels. Leave empty to show all.",
+        "options": [
+          "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat",
+          "traffic light", "fire hydrant", "stop sign", "parking meter", "bench",
+          "bird", "cat", "dog", "horse", "sheep", "cow", "elephant", "bear", "zebra", "giraffe",
+          "backpack", "umbrella", "handbag", "tie", "suitcase",
+          "frisbee", "skis", "snowboard", "sports ball", "kite", "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket",
+          "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl",
+          "banana", "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza", "donut", "cake",
+          "chair", "couch", "potted plant", "bed", "dining table", "toilet",
+          "tv", "laptop", "mouse", "remote", "keyboard", "cell phone",
+          "microwave", "oven", "toaster", "sink", "refrigerator",
+          "book", "clock", "vase", "scissors", "teddy bear", "hair drier", "toothbrush",
+          "hat", "cap", "watch", "glasses", "sunglasses", "shoe", "boot", "glove", "belt", "scarf",
+          "jacket", "shirt", "dress", "pants", "shorts", "skirt", "coat", "hoodie", "sweater",
+          "ring", "necklace", "earring", "bracelet", "bag", "purse", "wallet",
+          "helmet", "mask", "headphones", "camera", "phone", "tablet",
+          "ball", "bat", "racket", "wheel", "tire", "license plate",
+          "flag", "sign", "banner", "logo", "text", "barcode",
+          "door", "window", "fence", "wall", "roof", "stairs", "elevator",
+          "tree", "flower", "grass", "leaf", "rock", "water", "fire", "smoke",
+          "food", "drink", "plate", "glass", "can", "box", "container",
+          "animal", "insect", "fish", "butterfly", "spider"
+        ]
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Annotated", "types": ["Image"] },
+      { "name": "count", "display_name": "Count", "types": ["Number"] },
+      { "name": "objects", "display_name": "Objects", "types": ["ImageList"] }
+    ]
+  }
+]

@@ -1,0 +1,259 @@
+/* ── Image Pipeline Theme Variables (Light) ── */
+.image-pipeline-root {
+  --background: hsl(220, 14%, 96%);
+  --foreground: hsl(220, 9%, 8%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(220, 9%, 8%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(220, 9%, 8%);
+  --primary: hsl(24, 95%, 53%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(0, 0%, 100%);
+  --secondary-foreground: hsl(220, 9%, 16%);
+  --muted: hsl(220, 14%, 96%);
+  --muted-foreground: hsl(220, 9%, 46%);
+  --accent: hsl(220, 14%, 96%);
+  --accent-foreground: hsl(220, 9%, 8%);
+  --destructive: hsl(0, 72%, 51%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(220, 13%, 91%);
+  --input: hsl(220, 13%, 91%);
+  --ring: hsl(24, 95%, 53%);
+  --radius: 0.5rem;
+  --node-header: hsl(220, 14%, 96%);
+  --node-body: hsl(0, 0%, 100%);
+  --node-border: hsl(220, 13%, 87%);
+  --node-selected: hsl(24, 95%, 53%);
+  --canvas: hsl(220, 14%, 96%);
+  --canvas-dot: hsl(220, 9%, 78%);
+  --tooltip: hsl(220, 9%, 8%);
+  --tooltip-foreground: hsl(0, 0%, 100%);
+  --status-green: hsl(142, 71%, 45%);
+}
+
+/* ── Image Pipeline Theme Variables (Dark) ── */
+.dark .image-pipeline-root {
+  --background: hsl(220, 10%, 6%);
+  --foreground: hsl(220, 9%, 95%);
+  --card: hsl(220, 10%, 11%);
+  --card-foreground: hsl(220, 9%, 95%);
+  --popover: hsl(220, 10%, 11%);
+  --popover-foreground: hsl(220, 9%, 95%);
+  --primary: hsl(24, 95%, 53%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(220, 10%, 6%);
+  --secondary-foreground: hsl(220, 13%, 91%);
+  --muted: hsl(220, 10%, 16%);
+  --muted-foreground: hsl(220, 9%, 60%);
+  --accent: hsl(220, 10%, 16%);
+  --accent-foreground: hsl(220, 9%, 95%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(220, 10%, 22%);
+  --input: hsl(220, 10%, 26%);
+  --ring: hsl(24, 95%, 53%);
+  --node-header: hsl(220, 10%, 14%);
+  --node-body: hsl(220, 10%, 11%);
+  --node-border: hsl(220, 10%, 22%);
+  --node-selected: hsl(24, 95%, 53%);
+  --canvas: hsl(220, 10%, 4%);
+  --canvas-dot: hsl(220, 10%, 18%);
+  --tooltip: hsl(0, 0%, 100%);
+  --tooltip-foreground: hsl(0, 0%, 0%);
+  --status-green: hsl(142, 71%, 45%);
+}
+
+/* ── Scoped base ── */
+.image-pipeline-root {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* ── Tailwind utility overrides within scope ── */
+.image-pipeline-root .bg-background { background-color: var(--background) !important; }
+.image-pipeline-root .bg-card { background-color: var(--card) !important; }
+.image-pipeline-root .bg-accent { background-color: var(--accent) !important; }
+.image-pipeline-root .bg-muted { background-color: var(--muted) !important; }
+.image-pipeline-root .bg-primary { background-color: var(--primary) !important; }
+.image-pipeline-root .bg-destructive { background-color: var(--destructive) !important; }
+.image-pipeline-root .bg-popover { background-color: var(--popover) !important; }
+.image-pipeline-root .bg-tooltip { background-color: var(--tooltip) !important; }
+.image-pipeline-root .text-foreground { color: var(--foreground) !important; }
+.image-pipeline-root .text-card-foreground { color: var(--card-foreground) !important; }
+.image-pipeline-root .text-muted-foreground { color: var(--muted-foreground) !important; }
+.image-pipeline-root .text-primary { color: var(--primary) !important; }
+.image-pipeline-root .text-primary-foreground { color: var(--primary-foreground) !important; }
+.image-pipeline-root .text-destructive-foreground { color: var(--destructive-foreground) !important; }
+.image-pipeline-root .text-destructive { color: var(--destructive) !important; }
+.image-pipeline-root .text-accent-foreground { color: var(--accent-foreground) !important; }
+.image-pipeline-root .text-popover-foreground { color: var(--popover-foreground) !important; }
+.image-pipeline-root .text-tooltip-foreground { color: var(--tooltip-foreground) !important; }
+.image-pipeline-root .border-border { border-color: var(--border) !important; }
+.image-pipeline-root .border-input { border-color: var(--input) !important; }
+.image-pipeline-root .border-destructive { border-color: var(--destructive) !important; }
+.image-pipeline-root .divide-border > :not(:first-child) { border-color: var(--border) !important; }
+.image-pipeline-root .ring-ring { --tw-ring-color: var(--ring); }
+
+/* Hover state overrides */
+.image-pipeline-root *:hover.hover\:bg-accent { background-color: var(--accent) !important; }
+.image-pipeline-root *:hover.hover\:bg-destructive { background-color: var(--destructive) !important; }
+.image-pipeline-root *:hover.hover\:text-destructive-foreground { color: var(--destructive-foreground) !important; }
+.image-pipeline-root *:hover.hover\:border-destructive { border-color: var(--destructive) !important; }
+
+/* ── React Flow overrides ── */
+.image-pipeline-root .react-flow__node {
+  padding: 0 !important;
+  border-radius: 0.75rem !important;
+  border: none !important;
+  box-shadow: none !important;
+  width: auto !important;
+}
+
+.image-pipeline-root .react-flow__node.selected {
+  box-shadow: none !important;
+}
+
+.image-pipeline-root .react-flow__handle {
+  border: none !important;
+}
+
+.image-pipeline-root .react-flow__edge-path {
+  stroke-width: 2;
+  cursor: pointer;
+}
+
+.image-pipeline-root .react-flow__edge.selected .react-flow__edge-path {
+  stroke-width: 3;
+}
+
+.image-pipeline-root .react-flow__background {
+  background-color: var(--canvas) !important;
+}
+
+.image-pipeline-root .react-flow__controls {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 0.5rem !important;
+  overflow: hidden !important;
+}
+
+.image-pipeline-root .react-flow__controls-button {
+  background: var(--card) !important;
+  border-bottom: 1px solid var(--border) !important;
+  fill: var(--foreground) !important;
+  color: var(--foreground) !important;
+  width: 28px !important;
+  height: 28px !important;
+}
+
+.image-pipeline-root .react-flow__controls-button:hover {
+  background: var(--accent) !important;
+}
+
+.image-pipeline-root .react-flow__controls-button svg {
+  fill: var(--foreground) !important;
+}
+
+.image-pipeline-root .react-flow__minimap {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 0.5rem !important;
+}
+
+/* ── Custom scrollbar ── */
+.image-pipeline-root aside::-webkit-scrollbar {
+  width: 4px;
+}
+
+.image-pipeline-root aside::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.image-pipeline-root aside::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--muted-foreground) 20%, transparent);
+  border-radius: 4px;
+}
+
+.image-pipeline-root aside::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--muted-foreground) 30%, transparent);
+}
+
+/* ── Form element base styles ── */
+.image-pipeline-root input,
+.image-pipeline-root textarea,
+.image-pipeline-root select {
+  background-color: var(--background);
+  color: var(--foreground);
+  border-color: var(--border);
+}
+
+.image-pipeline-root input::placeholder,
+.image-pipeline-root textarea::placeholder {
+  color: var(--muted-foreground);
+}
+
+.image-pipeline-root input:focus,
+.image-pipeline-root textarea:focus,
+.image-pipeline-root select:focus {
+  border-color: var(--primary);
+  outline: none;
+}
+
+/* ── Node input styles ── */
+.image-pipeline-root .nodrag input,
+.image-pipeline-root .nodrag textarea,
+.image-pipeline-root .nodrag select {
+  cursor: text;
+}
+
+/* ── Shadow overrides (Tailwind shadow-lg uses oklch vars which break) ── */
+.image-pipeline-root .shadow-lg {
+  box-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.12),
+    0 6px 16px rgba(0, 0, 0, 0.08) !important;
+}
+
+.image-pipeline-root .shadow-sm {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.image-pipeline-root .shadow-xl {
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.12),
+    0 10px 24px rgba(0, 0, 0, 0.1) !important;
+}
+
+.image-pipeline-root .shadow-2xl {
+  box-shadow:
+    0 4px 12px rgba(0, 0, 0, 0.15),
+    0 16px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* ── Animated dash for connection line ── */
+@keyframes dash-animation {
+  from { stroke-dashoffset: 18; }
+  to { stroke-dashoffset: 0; }
+}
+
+.image-pipeline-root .animated-dash {
+  animation: dash-animation 0.5s linear infinite;
+}
+
+/* ── Pulse animation for processing nodes ── */
+@keyframes pipeline-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(249, 115, 22, 0); }
+}
+
+.image-pipeline-root .pipeline-processing {
+  animation: pipeline-pulse 2s ease-in-out infinite;
+}
+
+/* ── Transition for theme switching ── */
+html.transitioning,
+html.transitioning *,
+html.transitioning *::before,
+html.transitioning *::after {
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.2s ease !important;
+}

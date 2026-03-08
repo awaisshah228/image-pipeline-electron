@@ -1,0 +1,163 @@
+[
+  {
+    "type": "math",
+    "display_name": "Math",
+    "description": "Perform math operation on two numbers",
+    "icon": "Calculator",
+    "category": "utility",
+    "inputs": [
+      {
+        "name": "a",
+        "display_name": "A",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 0,
+        "input_types": ["Number"]
+      },
+      {
+        "name": "b",
+        "display_name": "B",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 0,
+        "input_types": ["Number"]
+      },
+      {
+        "name": "operation",
+        "display_name": "Operation",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["Add", "Subtract", "Multiply", "Divide", "Power", "Min", "Max", "Modulo"],
+        "value": "Add"
+      }
+    ],
+    "outputs": [
+      { "name": "result", "display_name": "Result", "types": ["Number"] }
+    ]
+  },
+  {
+    "type": "text_append",
+    "display_name": "Text Append",
+    "description": "Concatenate text strings",
+    "icon": "Type",
+    "category": "utility",
+    "inputs": [
+      {
+        "name": "text_a",
+        "display_name": "Text A",
+        "type": "str",
+        "required": true,
+        "show": true,
+        "input_types": ["Text"],
+        "placeholder": ""
+      },
+      {
+        "name": "text_b",
+        "display_name": "Text B",
+        "type": "str",
+        "required": true,
+        "show": true,
+        "input_types": ["Text"],
+        "placeholder": ""
+      },
+      {
+        "name": "separator",
+        "display_name": "Separator",
+        "type": "str",
+        "required": false,
+        "show": true,
+        "value": ""
+      }
+    ],
+    "outputs": [
+      { "name": "text", "display_name": "Text", "types": ["Text"] }
+    ]
+  },
+  {
+    "type": "switch",
+    "display_name": "Switch",
+    "description": "Pass through one of two inputs based on condition",
+    "icon": "GitBranch",
+    "category": "utility",
+    "inputs": [
+      {
+        "name": "condition",
+        "display_name": "Condition",
+        "type": "bool",
+        "required": true,
+        "show": true,
+        "value": true
+      },
+      {
+        "name": "if_true",
+        "display_name": "If True",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image", "Number", "Text"]
+      },
+      {
+        "name": "if_false",
+        "display_name": "If False",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image", "Number", "Text"]
+      }
+    ],
+    "outputs": [
+      { "name": "output", "display_name": "Output", "types": ["Image", "Number", "Text"] }
+    ]
+  },
+  {
+    "type": "note",
+    "display_name": "Note",
+    "description": "Add a text note to the pipeline",
+    "icon": "StickyNote",
+    "category": "utility",
+    "inputs": [
+      {
+        "name": "text",
+        "display_name": "Note",
+        "type": "str",
+        "required": false,
+        "show": true,
+        "multiline": true,
+        "placeholder": "Write a note..."
+      }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "compare",
+    "display_name": "Compare Images",
+    "description": "Side-by-side comparison of two images",
+    "icon": "Columns2",
+    "category": "utility",
+    "inputs": [
+      {
+        "name": "image_a",
+        "display_name": "Image A",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "image_b",
+        "display_name": "Image B",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      }
+    ],
+    "outputs": [
+      { "name": "comparison", "display_name": "Comparison", "types": ["Image"] },
+      { "name": "diff", "display_name": "Difference", "types": ["Image"] }
+    ]
+  }
+]

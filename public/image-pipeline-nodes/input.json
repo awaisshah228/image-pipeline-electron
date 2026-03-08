@@ -1,0 +1,267 @@
+[
+  {
+    "type": "load_image",
+    "display_name": "Load Image",
+    "description": "Load an image from file",
+    "icon": "Image",
+    "category": "input",
+    "inputs": [
+      {
+        "name": "file",
+        "display_name": "Image File",
+        "type": "file",
+        "required": true,
+        "show": true,
+        "file_types": [".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tiff"],
+        "info": "Select an image file to load"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] },
+      { "name": "width", "display_name": "Width", "types": ["Number"] },
+      { "name": "height", "display_name": "Height", "types": ["Number"] }
+    ]
+  },
+  {
+    "type": "load_image_url",
+    "display_name": "Load Image URL",
+    "description": "Load an image from a URL",
+    "icon": "Globe",
+    "category": "input",
+    "inputs": [
+      {
+        "name": "url",
+        "display_name": "Image URL",
+        "type": "str",
+        "required": true,
+        "show": true,
+        "placeholder": "https://example.com/image.png"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] },
+      { "name": "width", "display_name": "Width", "types": ["Number"] },
+      { "name": "height", "display_name": "Height", "types": ["Number"] }
+    ]
+  },
+  {
+    "type": "load_model",
+    "display_name": "Load Model",
+    "description": "Load an AI model for processing",
+    "icon": "Brain",
+    "category": "input",
+    "inputs": [
+      {
+        "name": "model_type",
+        "display_name": "Model Type",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["ESRGAN", "Real-ESRGAN", "SwinIR", "BSRGAN", "SPAN", "OmniSR", "HAT", "DAT", "Custom ONNX"],
+        "value": "Real-ESRGAN"
+      },
+      {
+        "name": "model_path",
+        "display_name": "Model File",
+        "type": "file",
+        "required": false,
+        "show": true,
+        "file_types": [".pth", ".onnx", ".safetensors", ".pt"],
+        "info": "Path to model weights (optional for built-in models)"
+      },
+      {
+        "name": "scale_factor",
+        "display_name": "Scale Factor",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["2x", "4x", "8x"],
+        "value": "4x"
+      },
+      {
+        "name": "device",
+        "display_name": "Device",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["auto", "cpu", "cuda", "mps"],
+        "value": "auto"
+      }
+    ],
+    "outputs": [
+      { "name": "model", "display_name": "Model", "types": ["Model"] }
+    ]
+  },
+  {
+    "type": "text_input",
+    "display_name": "Text Input",
+    "description": "Input text string value",
+    "icon": "Type",
+    "category": "input",
+    "inputs": [
+      {
+        "name": "text",
+        "display_name": "Text",
+        "type": "str",
+        "required": true,
+        "show": true,
+        "multiline": true,
+        "placeholder": "Enter text..."
+      }
+    ],
+    "outputs": [
+      { "name": "text", "display_name": "Text", "types": ["Text"] }
+    ]
+  },
+  {
+    "type": "number_input",
+    "display_name": "Number Input",
+    "description": "Input a number value",
+    "icon": "Hash",
+    "category": "input",
+    "inputs": [
+      {
+        "name": "value",
+        "display_name": "Value",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 0
+      }
+    ],
+    "outputs": [
+      { "name": "number", "display_name": "Number", "types": ["Number"] }
+    ]
+  },
+  {
+    "type": "color_input",
+    "display_name": "Color Input",
+    "description": "Pick a color value",
+    "icon": "Palette",
+    "category": "input",
+    "inputs": [
+      {
+        "name": "color",
+        "display_name": "Color",
+        "type": "str",
+        "required": true,
+        "show": true,
+        "value": "#ffffff",
+        "placeholder": "#ffffff"
+      }
+    ],
+    "outputs": [
+      { "name": "color", "display_name": "Color", "types": ["Color"] }
+    ]
+  },
+  {
+    "type": "load_model_url",
+    "display_name": "Load Model (URL)",
+    "description": "Load an AI model deployed at an endpoint URL",
+    "icon": "Globe",
+    "category": "input",
+    "inputs": [
+      {
+        "name": "endpoint_url",
+        "display_name": "Endpoint URL",
+        "type": "str",
+        "required": true,
+        "show": true,
+        "placeholder": "https://api.replicate.com/v1/models/..."
+      },
+      {
+        "name": "api_key",
+        "display_name": "API Key",
+        "type": "password",
+        "required": false,
+        "show": true,
+        "placeholder": "Bearer token or API key"
+      },
+      {
+        "name": "model_type",
+        "display_name": "Model Type",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["Upscale", "Style Transfer", "Background Removal", "Inpainting", "Depth Estimation", "Face Restore", "Custom"],
+        "value": "Upscale"
+      },
+      {
+        "name": "provider",
+        "display_name": "Provider",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["Replicate", "HuggingFace", "RunPod", "Modal", "Custom REST API"],
+        "value": "Replicate"
+      },
+      {
+        "name": "scale_factor",
+        "display_name": "Scale Factor",
+        "type": "dropdown",
+        "required": false,
+        "show": true,
+        "options": ["1x", "2x", "4x", "8x"],
+        "value": "4x"
+      }
+    ],
+    "outputs": [
+      { "name": "model", "display_name": "Model", "types": ["Model"] }
+    ]
+  },
+  {
+    "type": "api_process",
+    "display_name": "API Process Image",
+    "description": "Send image to a remote API for processing",
+    "icon": "Cloud",
+    "category": "input",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "endpoint_url",
+        "display_name": "Endpoint URL",
+        "type": "str",
+        "required": true,
+        "show": true,
+        "placeholder": "https://api.example.com/process"
+      },
+      {
+        "name": "api_key",
+        "display_name": "API Key",
+        "type": "password",
+        "required": false,
+        "show": true,
+        "placeholder": "API key or token"
+      },
+      {
+        "name": "method",
+        "display_name": "HTTP Method",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["POST", "PUT"],
+        "value": "POST"
+      },
+      {
+        "name": "extra_params",
+        "display_name": "Extra JSON Params",
+        "type": "str",
+        "required": false,
+        "show": true,
+        "multiline": true,
+        "placeholder": "{\"scale\": 4, \"denoise\": 0.5}"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] },
+      { "name": "response", "display_name": "Response", "types": ["Text"] }
+    ]
+  }
+]
