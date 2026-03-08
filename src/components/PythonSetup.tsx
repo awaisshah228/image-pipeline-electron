@@ -1,110 +1,115 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   Terminal,
   Check,
   X,
   Loader2,
-  Download,
-  Play,
   Cpu,
   AlertTriangle,
 } from "lucide-react";
 
-type SetupStep = "detecting" | "detected" | "not-found" | "checking-deps" | "installing" | "ready" | "starting" | "running" | "error";
+type SetupStage = "detect" | "download" | "check-deps" | "install-deps" | "starting" | "ready" | "error";
 
 interface Props {
   onReady: () => void;
 }
 
 export function PythonSetup({ onReady }: Props) {
-  const [step, setStep] = useState<SetupStep>("detecting");
-  const [pythonInfo, setPythonInfo] = useState<PythonInfo | null>(null);
-  const [missingDeps, setMissingDeps] = useState<string[]>([]);
-  const [installLogs, setInstallLogs] = useState<string[]>([]);
+  const [stage, setStage] = useState<SetupStage>("detect");
+  const [percentage, setPercentage] = useState(0);
+  const [message, setMessage] = useState("Looking for Python...");
   const [error, setError] = useState<string | null>(null);
-  const [backendStatus, setBackendStatus] = useState<{ url?: string; gpu?: boolean } | null>(null);
+  const [logs, setLogs] = useState<string[]>([]);
+  const [backendUrl, setBackendUrl] = useState<string | null>(null);
+  const [hasGpu, setHasGpu] = useState(false);
+  const started = useRef(false);
 
   const api = window.electronAPI?.python;
 
-  // Step 1: Detect Python
+  // Run the full automatic setup flow
   useEffect(() => {
-    if (!api) {
-      setStep("not-found");
-      setError("Electron API not available");
-      return;
-    }
+    if (!api || started.current) return;
+    started.current = true;
 
-    api.detect().then((info) => {
-      if (info) {
-        setPythonInfo(info);
-        setStep("checking-deps");
-      } else {
-        setStep("not-found");
+    // Listen for progress events from the main process
+    const cleanupProgress = api.onSetupProgress?.((data: { stage: string; percentage: number; message: string }) => {
+      setStage(data.stage as SetupStage);
+      setPercentage(data.percentage);
+      setMessage(data.message);
+      setLogs((prev) => [...prev.slice(-200), data.message]);
+    });
+
+    // Listen for install output
+    const cleanupInstall = api.onInstallProgress?.((output: string) => {
+      setLogs((prev) => [...prev.slice(-200), output]);
+    });
+
+    (async () => {
+      try {
+        // Step 1-3: Detect/download Python + install deps (all-in-one)
+        await api.setup();
+
+        // Step 4: Start backend server
+        setStage("starting");
+        setMessage("Starting backend server...");
+        setPercentage(0);
+
+        const startResult = await api.start();
+        setBackendUrl(startResult.url);
+
+        // Check GPU status
+        try {
+          const status = await api.status();
+          setHasGpu(status.python?.hasCuda ?? false);
+        } catch {}
+
+        setStage("ready");
+        setMessage("Backend ready");
+        setPercentage(100);
+
+        // Auto-proceed after a brief moment
+        setTimeout(onReady, 1200);
+      } catch (err) {
+        setStage("error");
+        setError(err instanceof Error ? err.message : String(err));
+        setMessage("Setup failed");
       }
-    }).catch((err) => {
-      setStep("error");
-      setError(String(err));
-    });
+    })();
+
+    return () => {
+      cleanupProgress?.();
+      cleanupInstall?.();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  // Step 2: Check dependencies
-  useEffect(() => {
-    if (step !== "checking-deps" || !api) return;
-
-    api.checkDeps().then(({ missing }) => {
-      if (missing.length === 0) {
-        setStep("detected");
-      } else {
-        setMissingDeps(missing);
-        setStep("detected");
-      }
-    });
-  }, [step]);
-
-  // Listen for install progress
-  useEffect(() => {
-    if (!api) return;
-    const cleanup = api.onInstallProgress((output) => {
-      setInstallLogs((prev) => [...prev.slice(-100), output]);
-    });
-    return cleanup;
-  }, []);
-
-  const handleInstallDeps = useCallback(async () => {
-    if (!api) return;
-    setStep("installing");
-    setInstallLogs([]);
-    const success = await api.installDeps();
-    if (success) {
-      setMissingDeps([]);
-      setStep("detected");
-    } else {
-      setStep("error");
-      setError("Failed to install dependencies. Check the logs above.");
-    }
-  }, [api]);
-
-  const handleStart = useCallback(async () => {
-    if (!api) return;
-    setStep("starting");
-    try {
-      const result = await api.start();
-      // Check health
-      const status = await api.status();
-      setBackendStatus({ url: result.url, gpu: status.python?.hasCuda });
-      setStep("running");
-
-      // Auto-proceed after 1 second
-      setTimeout(onReady, 1000);
-    } catch (err) {
-      setStep("error");
-      setError(String(err));
-    }
-  }, [api, onReady]);
 
   const handleSkip = useCallback(() => {
     onReady();
   }, [onReady]);
+
+  const handleRetry = useCallback(() => {
+    setError(null);
+    setLogs([]);
+    started.current = false;
+    setStage("detect");
+    setPercentage(0);
+    setMessage("Looking for Python...");
+    // Force re-run by toggling a state
+    started.current = false;
+    // Trigger the effect again
+    window.location.reload();
+  }, []);
+
+  const stageOrder: SetupStage[] = ["detect", "download", "check-deps", "install-deps", "starting", "ready"];
+  const currentIdx = stageOrder.indexOf(stage);
+
+  function getStepStatus(stepStage: SetupStage): "pending" | "loading" | "done" | "error" {
+    const stepIdx = stageOrder.indexOf(stepStage);
+    if (stage === "error" && stepIdx === currentIdx) return "error";
+    if (stepIdx < currentIdx) return "done";
+    if (stepIdx === currentIdx) return "loading";
+    return "pending";
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
@@ -116,35 +121,66 @@ export function PythonSetup({ onReady }: Props) {
           </div>
           <div>
             <h2 className="text-sm font-semibold text-white">Python Backend Setup</h2>
-            <p className="text-xs text-neutral-400">GPU-accelerated inference with PyTorch & Ultralytics</p>
+            <p className="text-xs text-neutral-400">Automatically configuring GPU-accelerated inference</p>
           </div>
         </div>
 
         {/* Content */}
         <div className="px-5 py-4 space-y-4">
-          {/* Step indicator */}
+          {/* Step indicators */}
           <div className="space-y-2">
             <StepRow
               label="Detect Python"
-              status={step === "detecting" ? "loading" : pythonInfo ? "done" : step === "not-found" ? "error" : "pending"}
-              detail={pythonInfo ? `Python ${pythonInfo.version} — ${pythonInfo.hasTorch ? (pythonInfo.hasCuda ? "CUDA GPU" : "CPU") : "no PyTorch"}` : undefined}
+              status={getStepStatus("detect")}
+              detail={getStepStatus("detect") === "done" ? "Found" : undefined}
             />
+            {(stage === "download" || currentIdx > stageOrder.indexOf("download")) && (
+              <StepRow
+                label="Download Python runtime"
+                status={getStepStatus("download")}
+                detail={getStepStatus("download") === "loading" ? `${percentage}%` : undefined}
+              />
+            )}
             <StepRow
-              label="Check dependencies"
-              status={step === "checking-deps" ? "loading" : missingDeps.length === 0 && pythonInfo ? "done" : missingDeps.length > 0 ? "warning" : "pending"}
-              detail={missingDeps.length > 0 ? `Missing: ${missingDeps.join(", ")}` : undefined}
+              label="Check & install dependencies"
+              status={
+                getStepStatus("check-deps") === "done" && getStepStatus("install-deps") === "done"
+                  ? "done"
+                  : getStepStatus("check-deps") === "loading" || getStepStatus("install-deps") === "loading"
+                    ? "loading"
+                    : getStepStatus("check-deps") === "done" || getStepStatus("install-deps") !== "pending"
+                      ? getStepStatus("install-deps")
+                      : "pending"
+              }
+              detail={
+                (stage === "install-deps") ? `Installing... ${percentage}%` :
+                (stage === "check-deps") ? "Checking..." : undefined
+              }
             />
             <StepRow
               label="Start backend server"
-              status={step === "starting" ? "loading" : step === "running" ? "done" : "pending"}
-              detail={backendStatus?.url ? `Running at ${backendStatus.url}` : undefined}
+              status={getStepStatus("starting")}
+              detail={backendUrl ? `Running at ${backendUrl}` : undefined}
             />
           </div>
 
-          {/* Install logs */}
-          {step === "installing" && installLogs.length > 0 && (
+          {/* Progress bar */}
+          {stage !== "ready" && stage !== "error" && (
+            <div className="h-1 rounded-full bg-neutral-800 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-orange-500 transition-all duration-300"
+                style={{ width: `${percentage}%` }}
+              />
+            </div>
+          )}
+
+          {/* Current message */}
+          <p className="text-[11px] text-neutral-500 truncate">{message}</p>
+
+          {/* Install logs (scrollable) */}
+          {(stage === "install-deps" || stage === "download") && logs.length > 0 && (
             <div className="max-h-32 overflow-auto rounded-lg bg-black p-3 font-mono text-[11px] text-neutral-400">
-              {installLogs.map((log, i) => (
+              {logs.slice(-50).map((log, i) => (
                 <div key={i}>{log}</div>
               ))}
             </div>
@@ -158,13 +194,12 @@ export function PythonSetup({ onReady }: Props) {
             </div>
           )}
 
-          {/* Not found message */}
-          {step === "not-found" && (
-            <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-3">
-              <p className="text-xs text-amber-300">
-                Python 3.8+ not found. Install Python from{" "}
-                <span className="font-medium">python.org</span> or via conda/homebrew,
-                then restart the app.
+          {/* Ready banner */}
+          {stage === "ready" && (
+            <div className="flex items-center gap-2 rounded-lg bg-green-500/10 border border-green-500/20 p-3">
+              <Cpu className="h-4 w-4 text-green-400" />
+              <p className="text-xs text-green-300">
+                Backend ready {hasGpu ? "with CUDA GPU" : "(CPU mode)"}
               </p>
             </div>
           )}
@@ -179,34 +214,21 @@ export function PythonSetup({ onReady }: Props) {
             Skip (CPU only)
           </button>
 
-          <div className="flex items-center gap-2">
-            {missingDeps.length > 0 && step === "detected" && (
-              <button
-                onClick={handleInstallDeps}
-                className="flex items-center gap-1.5 rounded-md bg-orange-500/10 border border-orange-500/30 px-3 py-1.5 text-xs font-medium text-orange-400 hover:bg-orange-500/20 transition-colors"
-              >
-                <Download className="h-3.5 w-3.5" />
-                Install Dependencies
-              </button>
-            )}
+          {stage === "error" && (
+            <button
+              onClick={handleRetry}
+              className="flex items-center gap-1.5 rounded-md bg-orange-500/10 border border-orange-500/30 px-3 py-1.5 text-xs font-medium text-orange-400 hover:bg-orange-500/20 transition-colors"
+            >
+              Retry
+            </button>
+          )}
 
-            {pythonInfo && missingDeps.length === 0 && step !== "running" && step !== "starting" && (
-              <button
-                onClick={handleStart}
-                className="flex items-center gap-1.5 rounded-md bg-green-500/10 border border-green-500/30 px-3 py-1.5 text-xs font-medium text-green-400 hover:bg-green-500/20 transition-colors"
-              >
-                <Play className="h-3.5 w-3.5" />
-                Start Backend
-              </button>
-            )}
-
-            {step === "running" && (
-              <div className="flex items-center gap-1.5 text-xs text-green-400">
-                <Cpu className="h-3.5 w-3.5" />
-                Ready
-              </div>
-            )}
-          </div>
+          {stage === "ready" && (
+            <div className="flex items-center gap-1.5 text-xs text-green-400">
+              <Check className="h-3.5 w-3.5" />
+              Ready
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -219,7 +241,7 @@ function StepRow({
   detail,
 }: {
   label: string;
-  status: "pending" | "loading" | "done" | "error" | "warning";
+  status: "pending" | "loading" | "done" | "error";
   detail?: string;
 }) {
   return (
@@ -228,7 +250,6 @@ function StepRow({
         {status === "loading" && <Loader2 className="h-4 w-4 text-orange-400 animate-spin" />}
         {status === "done" && <Check className="h-4 w-4 text-green-400" />}
         {status === "error" && <X className="h-4 w-4 text-red-400" />}
-        {status === "warning" && <AlertTriangle className="h-3.5 w-3.5 text-amber-400" />}
         {status === "pending" && <div className="h-2 w-2 rounded-full bg-neutral-600" />}
       </div>
       <div className="flex-1 min-w-0">
