@@ -20,8 +20,9 @@
         "type": "dropdown",
         "required": true,
         "show": true,
-        "options": ["rembg (u2net)", "rembg (isnet)", "SAM"],
-        "value": "rembg (u2net)"
+        "options": ["BiRefNet (best)", "BiRefNet Lite", "BiRefNet Portrait", "u2net", "isnet", "silueta (fast)", "bria-rmbg"],
+        "value": "BiRefNet (best)",
+        "info": "BiRefNet = highest quality (remove.bg level). u2net = classic. silueta = fastest."
       },
       {
         "name": "alpha_matting",

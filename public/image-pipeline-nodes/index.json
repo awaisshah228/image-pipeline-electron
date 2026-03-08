@@ -8,6 +8,7 @@
     { "name": "ai_upscale", "display_name": "AI Upscale", "icon": "Zap", "file": "ai_upscale.json" },
     { "name": "ai_enhance", "display_name": "AI Enhance", "icon": "Brain", "file": "ai_enhance.json" },
     { "name": "computer_vision", "display_name": "Computer Vision", "icon": "ScanFace", "file": "computer_vision.json" },
+    { "name": "image_channel", "display_name": "Channels", "icon": "Layers", "file": "image_channel.json" },
     { "name": "utility", "display_name": "Utility", "icon": "Wrench", "file": "utility.json" },
     { "name": "batch", "display_name": "Batch", "icon": "FolderOpen", "file": "batch.json" }
   ]

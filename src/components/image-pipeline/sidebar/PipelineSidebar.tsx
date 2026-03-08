@@ -1,5 +1,5 @@
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   Search,
   ChevronRight,
@@ -12,12 +12,30 @@ import {
   Zap,
   Brain,
   Wrench,
+  Layers,
   FolderOpen,
+  Star,
+  ScanFace,
   type LucideIcon,
 } from "lucide-react";
 import { usePipelineStore } from "@/lib/image-pipeline/pipeline-store";
 import { getCategoryColor } from "@/lib/image-pipeline/utils";
 import type { PipelineNodeDefinition } from "@/lib/image-pipeline/types";
+
+const FAVORITES_KEY = "pipeline-node-favorites";
+
+function loadFavorites(): Set<string> {
+  try {
+    const raw = localStorage.getItem(FAVORITES_KEY);
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function saveFavorites(favs: Set<string>) {
+  localStorage.setItem(FAVORITES_KEY, JSON.stringify([...favs]));
+}
 
 const categoryIcons: Record<string, LucideIcon> = {
   input: Image,
@@ -27,7 +45,9 @@ const categoryIcons: Record<string, LucideIcon> = {
   image_transform: Move,
   ai_upscale: Zap,
   ai_enhance: Brain,
+  computer_vision: ScanFace,
   utility: Wrench,
+  image_channel: Layers,
   batch: FolderOpen,
 };
 
@@ -37,6 +57,20 @@ export function PipelineSidebar() {
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(
     new Set(Object.keys(nodeDefinitions))
   );
+  const [favorites, setFavorites] = useState<Set<string>>(loadFavorites);
+
+  const toggleFavorite = useCallback((nodeType: string) => {
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(nodeType)) {
+        next.delete(nodeType);
+      } else {
+        next.add(nodeType);
+      }
+      saveFavorites(next);
+      return next;
+    });
+  }, []);
 
   const toggleCategory = useCallback((cat: string) => {
     setExpandedCategories((prev) => {
@@ -52,6 +86,11 @@ export function PipelineSidebar() {
 
   const allNodes = Object.entries(nodeDefinitions).flatMap(([cat, nodes]) =>
     nodes.map((n) => ({ ...n, _category: cat }))
+  );
+
+  const favoriteNodes = useMemo(
+    () => allNodes.filter((n) => favorites.has(n.type)),
+    [allNodes, favorites]
   );
 
   const filteredNodes = searchQuery.trim()
@@ -89,55 +128,106 @@ export function PipelineSidebar() {
               </p>
             )}
             {filteredNodes.map((node) => (
-              <DraggableNodeItem key={node.type} node={node} />
+              <DraggableNodeItem
+                key={node.type}
+                node={node}
+                isFavorite={favorites.has(node.type)}
+                onToggleFavorite={toggleFavorite}
+              />
             ))}
           </div>
         ) : (
-          Object.entries(nodeDefinitions).map(([category, nodes]) => {
-            const CategoryIcon = categoryIcons[category] ?? Wrench;
-            const color = getCategoryColor(category);
-            const isExpanded = expandedCategories.has(category);
-            const displayName = category
-              .split("_")
-              .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-              .join(" ");
-
-            return (
-              <div key={category}>
+          <>
+            {/* Favorites section */}
+            {favoriteNodes.length > 0 && (
+              <div>
                 <button
-                  onClick={() => toggleCategory(category)}
+                  onClick={() => toggleCategory("__favorites__")}
                   className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-semibold hover:bg-accent transition-colors"
                 >
-                  {isExpanded ? (
+                  {expandedCategories.has("__favorites__") ? (
                     <ChevronDown className="h-3 w-3 text-muted-foreground" />
                   ) : (
                     <ChevronRight className="h-3 w-3 text-muted-foreground" />
                   )}
                   <div
                     className="flex h-5 w-5 items-center justify-center rounded"
-                    style={{ backgroundColor: color + "20" }}
+                    style={{ backgroundColor: "#eab30820" }}
                   >
-                    <CategoryIcon
-                      className="h-3 w-3"
-                      style={{ color }}
-                    />
+                    <Star className="h-3 w-3" style={{ color: "#eab308" }} />
                   </div>
-                  <span>{displayName}</span>
+                  <span>Favorites</span>
                   <span className="ml-auto text-[10px] text-muted-foreground">
-                    {nodes.length}
+                    {favoriteNodes.length}
                   </span>
                 </button>
-
-                {isExpanded && (
+                {expandedCategories.has("__favorites__") && (
                   <div className="pb-1 space-y-0.5 px-2">
-                    {nodes.map((node) => (
-                      <DraggableNodeItem key={node.type} node={node} />
+                    {favoriteNodes.map((node) => (
+                      <DraggableNodeItem
+                        key={`fav-${node.type}`}
+                        node={node}
+                        isFavorite
+                        onToggleFavorite={toggleFavorite}
+                      />
                     ))}
                   </div>
                 )}
               </div>
-            );
-          })
+            )}
+
+            {/* Regular categories */}
+            {Object.entries(nodeDefinitions).map(([category, nodes]) => {
+              const CategoryIcon = categoryIcons[category] ?? Wrench;
+              const color = getCategoryColor(category);
+              const isExpanded = expandedCategories.has(category);
+              const displayName = category
+                .split("_")
+                .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+                .join(" ");
+
+              return (
+                <div key={category}>
+                  <button
+                    onClick={() => toggleCategory(category)}
+                    className="flex w-full items-center gap-2 px-3 py-2.5 text-xs font-semibold hover:bg-accent transition-colors"
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                    ) : (
+                      <ChevronRight className="h-3 w-3 text-muted-foreground" />
+                    )}
+                    <div
+                      className="flex h-5 w-5 items-center justify-center rounded"
+                      style={{ backgroundColor: color + "20" }}
+                    >
+                      <CategoryIcon
+                        className="h-3 w-3"
+                        style={{ color }}
+                      />
+                    </div>
+                    <span>{displayName}</span>
+                    <span className="ml-auto text-[10px] text-muted-foreground">
+                      {nodes.length}
+                    </span>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="pb-1 space-y-0.5 px-2">
+                      {nodes.map((node) => (
+                        <DraggableNodeItem
+                          key={node.type}
+                          node={node}
+                          isFavorite={favorites.has(node.type)}
+                          onToggleFavorite={toggleFavorite}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </>
         )}
       </div>
 
@@ -176,7 +266,15 @@ export function PipelineSidebar() {
   );
 }
 
-function DraggableNodeItem({ node }: { node: PipelineNodeDefinition }) {
+function DraggableNodeItem({
+  node,
+  isFavorite,
+  onToggleFavorite,
+}: {
+  node: PipelineNodeDefinition;
+  isFavorite: boolean;
+  onToggleFavorite: (type: string) => void;
+}) {
   const color = getCategoryColor(node.category);
 
   const onDragStart = useCallback(
@@ -194,7 +292,7 @@ function DraggableNodeItem({ node }: { node: PipelineNodeDefinition }) {
     <div
       draggable
       onDragStart={onDragStart}
-      className="flex items-center gap-2.5 rounded-lg px-3 py-2 cursor-grab active:cursor-grabbing hover:bg-accent transition-colors border border-transparent hover:border-border/50"
+      className="group/item flex items-center gap-2.5 rounded-lg px-3 py-2 cursor-grab active:cursor-grabbing hover:bg-accent transition-colors border border-transparent hover:border-border/50"
     >
       <div
         className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md"
@@ -213,6 +311,22 @@ function DraggableNodeItem({ node }: { node: PipelineNodeDefinition }) {
           {node.description}
         </div>
       </div>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          onToggleFavorite(node.type);
+        }}
+        onMouseDown={(e) => e.stopPropagation()}
+        className={`shrink-0 p-0.5 rounded transition-all ${
+          isFavorite
+            ? "text-yellow-500 opacity-100"
+            : "text-muted-foreground opacity-0 group-hover/item:opacity-60 hover:!opacity-100"
+        }`}
+        title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+      >
+        <Star className={`h-3 w-3 ${isFavorite ? "fill-current" : ""}`} />
+      </button>
     </div>
   );
 }

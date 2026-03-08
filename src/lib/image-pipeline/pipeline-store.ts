@@ -78,6 +78,7 @@ interface PipelineState {
   updateNodePreview: (nodeId: string, previewUrl: string | undefined) => void;
   setNodeProcessing: (nodeId: string, processing: boolean) => void;
   setNodeError: (nodeId: string, error: string | undefined) => void;
+  toggleNodeDisable: (nodeId: string) => void;
   deleteNode: (nodeId: string) => void;
   deleteEdge: (edgeId: string) => void;
   reprocessNode: (nodeId: string) => Promise<void> | void;
@@ -110,6 +111,27 @@ async function processNodeChain(
   const node = get().nodes.find((n) => n.id === nodeId);
   if (!node) return;
 
+  const disableState = node.data.disableState ?? "enabled";
+
+  // Disabled: stop propagation entirely
+  if (disableState === "disabled") return;
+
+  // Passthrough: skip processing, just pass image through
+  if (disableState === "passthrough") {
+    set({ nodes: updateNode(get().nodes, nodeId, () => ({ previewUrl: imageDataUrl })) });
+    // Continue propagation with unmodified image
+    for (const edge of get().edges) {
+      if (edge.source !== nodeId) continue;
+      try {
+        const sData = JSON.parse(atob(edge.sourceHandle ?? ""));
+        if (sData.outputTypes?.some((t: string) => t.toLowerCase() === "image")) {
+          await processNodeChain(edge.target, imageDataUrl, get, set);
+        }
+      } catch { /* skip */ }
+    }
+    return;
+  }
+
   const nodeType = node.data.definition.type;
   const operation = getOperationForNodeType(nodeType);
 
@@ -118,14 +140,17 @@ async function processNodeChain(
   if (operation && !isPassthroughNode(nodeType)) {
     set({ nodes: updateNode(get().nodes, nodeId, () => ({ processing: true, error: undefined })) });
 
+    const startTime = performance.now();
     try {
       const result = await processImage(operation, imageDataUrl, node.data.fieldValues);
       resultUrl = result.dataUrl;
+      const executionTime = Math.round(performance.now() - startTime);
       set({
         nodes: updateNode(get().nodes, nodeId, () => ({
           previewUrl: resultUrl,
           processing: false,
           outputData: result.metadata,
+          executionTime,
         })),
       });
     } catch (err) {
@@ -923,6 +948,14 @@ export const usePipelineStore = create<PipelineState>()(persist((set, get) => ({
 
   setNodeError: (nodeId, error) => {
     set({ nodes: updateNode(get().nodes, nodeId, () => ({ error })) });
+  },
+
+  toggleNodeDisable: (nodeId) => {
+    const node = get().nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+    const current = node.data.disableState ?? "enabled";
+    const next = current === "enabled" ? "disabled" : current === "disabled" ? "passthrough" : "enabled";
+    set({ nodes: updateNode(get().nodes, nodeId, () => ({ disableState: next })) });
   },
 
   deleteNode: (nodeId) => {

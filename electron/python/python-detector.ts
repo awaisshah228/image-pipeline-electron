@@ -1,5 +1,7 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import { existsSync } from "node:fs";
+import path from "node:path";
 
 const execFileAsync = promisify(execFile);
 
@@ -16,6 +18,36 @@ export interface PythonInfo {
  */
 export async function detectPython(): Promise<PythonInfo | null> {
   const candidates: string[] = [];
+
+  // Prefer project venv Python — avoids reinstalling deps that are already in the venv
+  // __dirname is dist-electron/ at runtime, so go up one level to reach electron-app/
+  const electronAppRoot = path.resolve(__dirname, "..");
+  const venvRoots = [
+    path.join(electronAppRoot, "python-backend", "venv"),
+    path.join(electronAppRoot, "python-backend", ".venv"),
+    path.join(process.cwd(), "python-backend", "venv"),
+    path.join(process.cwd(), "python-backend", ".venv"),
+  ];
+  try {
+    const { app } = require("electron");
+    venvRoots.push(
+      path.join(app.getAppPath(), "python-backend", "venv"),
+      path.join(app.getAppPath(), "python-backend", ".venv"),
+    );
+  } catch {}
+
+  for (const venvRoot of venvRoots) {
+    // Check both python3 and python — venvs may have either or both
+    const names = process.platform === "win32"
+      ? [path.join(venvRoot, "Scripts", "python.exe")]
+      : [path.join(venvRoot, "bin", "python3"), path.join(venvRoot, "bin", "python")];
+    for (const venvPython of names) {
+      if (existsSync(venvPython)) {
+        candidates.push(venvPython);
+        break; // only add one per venv root
+      }
+    }
+  }
 
   if (process.platform === "win32") {
     candidates.push("python", "python3", "py -3");
@@ -94,9 +126,15 @@ export async function checkDependencies(
     const { stdout } = await execFileAsync(pythonPath, [
       "-c",
       `
-import json
+import sys, os, json
+
+# Suppress noisy library output (ultralytics prints warnings on import)
+_real_stderr = sys.stderr
+sys.stderr = open(os.devnull, "w")
+_real_stdout = sys.stdout
 
 required = ["sanic", "numpy", "cv2", "PIL", "ultralytics", "psutil"]
+optional = ["rembg"]
 installed = []
 missing = []
 
@@ -107,12 +145,31 @@ for pkg in required:
     except ImportError:
         missing.append(pkg)
 
+# Optional packages — don't block setup if missing
+for pkg in optional:
+    try:
+        __import__(pkg)
+        installed.append(pkg)
+    except ImportError:
+        pass
+
+# Restore stdout before printing result
+sys.stderr = _real_stderr
+sys.stdout = _real_stdout
 print(json.dumps({"installed": installed, "missing": missing}))
 `,
-    ], { timeout: 10000 });
+    ], { timeout: 30000 });
 
-    return JSON.parse(stdout.trim());
-  } catch {
+    // Extract JSON from stdout — skip any non-JSON lines libraries may print
+    const lines = stdout.trim().split("\n");
+    for (let i = lines.length - 1; i >= 0; i--) {
+      try {
+        return JSON.parse(lines[i]);
+      } catch {}
+    }
+    return { installed: [], missing: ["sanic", "numpy", "cv2", "PIL", "ultralytics", "psutil"] };
+  } catch (err) {
+    console.error("[python-detector] checkDependencies error:", err);
     return { installed: [], missing: ["sanic", "numpy", "cv2", "PIL", "ultralytics", "psutil"] };
   }
 }
@@ -125,9 +182,53 @@ export async function installDependencies(
   requirementsPath: string,
   onOutput?: (data: string) => void
 ): Promise<boolean> {
+  const pipOk = await runProcess(pythonPath, ["-m", "pip", "install", "-r", requirementsPath], onOutput);
+  if (!pipOk) return false;
+
+  // Pre-download small AI models (~16MB total). Larger models (BiRefNet etc) download on first use.
+  onOutput?.("\n--- Downloading AI models ---\n");
+  await runProcess(pythonPath, ["-c", `
+import sys
+
+print("Downloading YOLOv8n model (~6MB)...")
+sys.stdout.flush()
+try:
+    from ultralytics import YOLO
+    YOLO("yolov8n.pt")
+    print("YOLOv8n ready")
+except Exception as e:
+    print(f"YOLOv8n skip: {e}")
+sys.stdout.flush()
+
+print("Downloading MobileSAM model (~10MB)...")
+sys.stdout.flush()
+try:
+    import urllib.request
+    from pathlib import Path
+    ckpt_dir = Path.home() / ".mobile_sam"
+    ckpt_dir.mkdir(parents=True, exist_ok=True)
+    ckpt_path = ckpt_dir / "mobile_sam.pt"
+    if not ckpt_path.exists():
+        urllib.request.urlretrieve("https://github.com/ChaoningZhang/MobileSAM/raw/master/weights/mobile_sam.pt", str(ckpt_path))
+    print(f"MobileSAM ready ({ckpt_path.stat().st_size // 1024 // 1024}MB)")
+except Exception as e:
+    print(f"MobileSAM skip: {e}")
+sys.stdout.flush()
+
+print("All models ready! (BiRefNet bg-removal model downloads on first use)")
+`], onOutput);
+
+  return true;
+}
+
+function runProcess(
+  pythonPath: string,
+  args: string[],
+  onOutput?: (data: string) => void
+): Promise<boolean> {
   return new Promise((resolve) => {
     const { spawn } = require("node:child_process");
-    const proc = spawn(pythonPath, ["-m", "pip", "install", "-r", requirementsPath], {
+    const proc = spawn(pythonPath, args, {
       env: {
         ...process.env,
         PYTHONNOUSERSITE: "1",

@@ -42,6 +42,8 @@ export interface PipelineOutputPort {
   types: string[];
 }
 
+export type NodeDisableState = "enabled" | "disabled" | "passthrough";
+
 export interface PipelineNodeData {
   definition: PipelineNodeDefinition;
   fieldValues: Record<string, unknown>;
@@ -51,6 +53,10 @@ export interface PipelineNodeData {
   error?: string;
   /** Extra output data from CV operations (face count, face images, etc.) */
   outputData?: Record<string, unknown>;
+  /** Node disable state: enabled (normal), disabled (skip + block), passthrough (skip + pass data through) */
+  disableState?: NodeDisableState;
+  /** Last execution time in milliseconds */
+  executionTime?: number;
   [key: string]: unknown;
 }
 

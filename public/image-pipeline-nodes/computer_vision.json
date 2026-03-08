@@ -582,5 +582,26 @@
       { "name": "count", "display_name": "Count", "types": ["Number"] },
       { "name": "objects", "display_name": "Objects", "types": ["ImageList"] }
     ]
+  },
+  {
+    "type": "segment_select",
+    "display_name": "Smart Select (SAM)",
+    "description": "Click on objects to keep or remove. Uses MobileSAM AI for precise segmentation.",
+    "icon": "MousePointer",
+    "category": "computer_vision",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Result", "types": ["Image"] },
+      { "name": "mask", "display_name": "Mask", "types": ["Image"] }
+    ]
   }
 ]

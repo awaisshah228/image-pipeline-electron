@@ -1,0 +1,117 @@
+[
+  {
+    "type": "split_channels",
+    "display_name": "Split Channels",
+    "description": "Extract a single color channel from image",
+    "icon": "Layers",
+    "category": "image_channel",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "channel",
+        "display_name": "Channel",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["red", "green", "blue"],
+        "value": "red"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Channel", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "merge_channels",
+    "display_name": "Channel Mixer",
+    "description": "Adjust individual RGB channel levels",
+    "icon": "Combine",
+    "category": "image_channel",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "red",
+        "display_name": "Red",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 1.0,
+        "info": "Red channel multiplier (0-3)"
+      },
+      {
+        "name": "green",
+        "display_name": "Green",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 1.0,
+        "info": "Green channel multiplier (0-3)"
+      },
+      {
+        "name": "blue",
+        "display_name": "Blue",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 1.0,
+        "info": "Blue channel multiplier (0-3)"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "chroma_key",
+    "display_name": "Chroma Key",
+    "description": "Remove green/blue screen background",
+    "icon": "Scissors",
+    "category": "image_channel",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "hue_center",
+        "display_name": "Hue Center",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 60,
+        "info": "Center hue (60=green, 120=blue)"
+      },
+      {
+        "name": "hue_range",
+        "display_name": "Hue Range",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 30,
+        "info": "How wide the key range is"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] },
+      { "name": "count", "display_name": "Masked Px", "types": ["Number"] }
+    ]
+  }
+]

@@ -180,6 +180,270 @@
     ]
   },
   {
+    "type": "pixelate",
+    "display_name": "Pixelate",
+    "description": "Reduce image to pixel blocks",
+    "icon": "Grid3X3",
+    "category": "image_filter",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "factor",
+        "display_name": "Block Size",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 10,
+        "info": "Pixel block size (2-100)"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "high_pass",
+    "display_name": "High Pass",
+    "description": "Extract high-frequency detail",
+    "icon": "Mountain",
+    "category": "image_filter",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "kernel_size",
+        "display_name": "Radius",
+        "type": "int",
+        "required": true,
+        "show": true,
+        "value": 21,
+        "info": "Filter radius (odd number, 3-99)"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "add_noise",
+    "display_name": "Add Noise",
+    "description": "Add random noise to image",
+    "icon": "Zap",
+    "category": "image_filter",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "noise_type",
+        "display_name": "Type",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["gaussian", "salt_pepper"],
+        "value": "gaussian"
+      },
+      {
+        "name": "amount",
+        "display_name": "Amount",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 25,
+        "info": "Noise intensity (1-100)"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "surface_blur",
+    "display_name": "Surface Blur",
+    "description": "Edge-preserving smooth filter",
+    "icon": "Wind",
+    "category": "image_filter",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "sigma_s",
+        "display_name": "Spatial Sigma",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 60,
+        "info": "Spatial filter size (1-200)"
+      },
+      {
+        "name": "sigma_r",
+        "display_name": "Range Sigma",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 0.4,
+        "info": "Edge threshold (0.1-1.0)"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "composite",
+    "display_name": "Composite",
+    "description": "Blend two images with blend modes",
+    "icon": "Layers",
+    "category": "image_filter",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Base Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "overlay_image",
+        "display_name": "Overlay Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "mode",
+        "display_name": "Blend Mode",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["normal", "multiply", "screen", "overlay"],
+        "value": "normal"
+      },
+      {
+        "name": "opacity",
+        "display_name": "Opacity",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 0.5,
+        "info": "Blend opacity (0-1)"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "stack_images",
+    "display_name": "Stack Images",
+    "description": "Place two images side by side or stacked",
+    "icon": "Columns2",
+    "category": "image_filter",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image A",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "second_image",
+        "display_name": "Image B",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "direction",
+        "display_name": "Direction",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["horizontal", "vertical"],
+        "value": "horizontal"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
+    "type": "add_caption",
+    "display_name": "Add Caption",
+    "description": "Add text caption bar to image",
+    "icon": "Type",
+    "category": "image_filter",
+    "inputs": [
+      {
+        "name": "image",
+        "display_name": "Image",
+        "type": "str",
+        "required": true,
+        "show": false,
+        "input_types": ["Image"]
+      },
+      {
+        "name": "text",
+        "display_name": "Caption Text",
+        "type": "str",
+        "required": true,
+        "show": true,
+        "value": "Caption",
+        "placeholder": "Enter caption text..."
+      },
+      {
+        "name": "position",
+        "display_name": "Position",
+        "type": "dropdown",
+        "required": true,
+        "show": true,
+        "options": ["bottom", "top"],
+        "value": "bottom"
+      },
+      {
+        "name": "font_scale",
+        "display_name": "Font Scale",
+        "type": "float",
+        "required": true,
+        "show": true,
+        "value": 1.0,
+        "info": "Text size multiplier (0.5-3)"
+      }
+    ],
+    "outputs": [
+      { "name": "image", "display_name": "Image", "types": ["Image"] }
+    ]
+  },
+  {
     "type": "blend",
     "display_name": "Blend Images",
     "description": "Blend two images together",

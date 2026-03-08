@@ -160,6 +160,18 @@ export function registerPythonBackendHandlers(ipcMain: IpcMain, getMainWindow: (
     return backend.request("GET", "/models/list");
   });
 
+  // AI model status (which models are downloaded)
+  ipcMain.handle("python:aiModelStatus", async () => {
+    if (!backend?.running) throw new Error("Python backend not running");
+    return backend.request("GET", "/models/ai-status");
+  });
+
+  // Download AI model on demand
+  ipcMain.handle("python:downloadAiModel", async (_e, type: string, name: string) => {
+    if (!backend?.running) throw new Error("Python backend not running");
+    return backend.request("POST", "/models/download-ai", { type, name });
+  });
+
   // System info (CPU/RAM/GPU usage)
   ipcMain.handle("python:systemInfo", async () => {
     if (!backend?.running) throw new Error("Python backend not running");

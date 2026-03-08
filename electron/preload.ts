@@ -95,6 +95,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
     loadModel: (modelName: string) => ipcRenderer.invoke("python:loadModel", modelName),
     unloadModel: (modelName: string) => ipcRenderer.invoke("python:unloadModel", modelName),
     listModels: () => ipcRenderer.invoke("python:listModels"),
+    aiModelStatus: () => ipcRenderer.invoke("python:aiModelStatus"),
+    downloadAiModel: (type: string, name: string) => ipcRenderer.invoke("python:downloadAiModel", type, name),
     systemInfo: () => ipcRenderer.invoke("python:systemInfo"),
     // Events
     onInstallProgress: (callback: (output: string) => void) => {

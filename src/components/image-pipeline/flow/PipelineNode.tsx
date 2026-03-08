@@ -54,12 +54,19 @@ import {
   FolderDown,
   Cloud,
   X,
+  Star,
+  Power,
+  SkipForward,
+  Timer,
+  MousePointer,
   type LucideIcon,
 } from "lucide-react";
-import type { PipelineNodeData } from "@/lib/image-pipeline/types";
+import type { PipelineNodeData, NodeDisableState } from "@/lib/image-pipeline/types";
 import { PipelineHandle } from "./PipelineHandle";
 import { PipelineInputFieldComponent } from "./PipelineInputField";
+import { SegmentSelectModal } from "./SegmentSelectModal";
 import { usePipelineStore } from "@/lib/image-pipeline/pipeline-store";
+import { processImage } from "@/lib/image-pipeline/native-processor";
 import { getActiveStream } from "@/lib/image-pipeline/webcam-processor";
 import {
   encodeHandleId,
@@ -74,7 +81,7 @@ const iconMap: Record<string, LucideIcon> = {
   Square, Grid3x3: Grid3X3, Grid3X3, Combine, ArrowUpFromLine, UserCheck,
   Scissors, Paintbrush, Blend: Layers, ScanFace, Mountain, PaintBucket,
   Calculator, GitBranch, StickyNote, Columns2, FolderOpen, FolderDown,
-  Repeat, ListPlus, Video, Film, Cog, Cloud,
+  Repeat, ListPlus, Video, Film, Cog, Cloud, MousePointer,
 };
 
 interface PipelineNodeProps {
@@ -88,13 +95,17 @@ export const PipelineNodeComponent = memo(function PipelineNodeComponent({
   data,
   selected,
 }: PipelineNodeProps) {
-  const { definition, fieldValues, showNode, previewUrl, processing, error } =
+  const { definition, fieldValues, showNode, previewUrl, processing, error, disableState = "enabled", executionTime } =
     data;
   const outputData = data.outputData as Record<string, unknown> | undefined;
   const [collapsed, setCollapsed] = useState(!showNode);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
+  const [segmentSelectOpen, setSegmentSelectOpen] = useState(false);
   const webcamVideoRef = useRef<HTMLVideoElement>(null);
+  const isSegmentSelect = definition.type === "segment_select";
   const isWebcamNode = definition.type === "webcam_capture";
+  const isDisabled = disableState === "disabled";
+  const isPassthrough = disableState === "passthrough";
 
   // Attach live MediaStream to <video> for zero-copy GPU-composited preview
   useEffect(() => {
@@ -129,9 +140,50 @@ export const PipelineNodeComponent = memo(function PipelineNodeComponent({
   }, [isWebcamNode, processing]);
 
   const updateNodeField = usePipelineStore((s) => s.updateNodeField);
+  const updateNodePreview = usePipelineStore((s) => s.updateNodePreview);
   const deleteNode = usePipelineStore((s) => s.deleteNode);
   const reprocessNode = usePipelineStore((s) => s.reprocessNode);
+  const toggleNodeDisable = usePipelineStore((s) => s.toggleNodeDisable);
   const edges = usePipelineStore((s) => s.edges);
+
+  // Get the source image for segment_select (from connected input node)
+  const segmentSourceImage = isSegmentSelect
+    ? (data.fieldValues?.image as string) ?? previewUrl
+    : null;
+
+  const handleSegmentApply = useCallback(
+    async (
+      points: number[][],
+      pointLabels: number[],
+      box?: number[],
+      currentImage?: string
+    ): Promise<string | undefined> => {
+      const sourceImg = currentImage || segmentSourceImage;
+      if (!sourceImg) return undefined;
+      const params: Record<string, unknown> = {};
+      if (points.length > 0) {
+        params.points = points;
+        params.point_labels = pointLabels;
+      }
+      if (box) {
+        params.box = box;
+      }
+      const result = await processImage("segment_select", sourceImg, params);
+      if (result?.dataUrl) {
+        updateNodePreview(id, result.dataUrl);
+        return result.dataUrl;
+      }
+      return undefined;
+    },
+    [id, segmentSourceImage, updateNodePreview]
+  );
+
+  const handleSegmentUpdatePreview = useCallback(
+    (url: string) => {
+      updateNodePreview(id, url);
+    },
+    [id, updateNodePreview]
+  );
 
   const Icon = iconMap[definition.icon] ?? Cog;
   const categoryColor = getCategoryColor(definition.category);
@@ -186,16 +238,42 @@ export const PipelineNodeComponent = memo(function PipelineNodeComponent({
       } ${collapsed ? "w-52" : "w-80"} ${processing ? "pipeline-processing" : ""}`}
       style={{
         backgroundColor: "var(--node-body)",
-        borderColor: selected ? "var(--node-selected)" : "var(--node-border)",
+        borderColor: selected ? "var(--node-selected)" : isDisabled ? "var(--destructive)" : isPassthrough ? "#f59e0b" : "var(--node-border)",
+        opacity: isDisabled ? 0.5 : 1,
         ...(selected ? { boxShadow: "0 0 0 2px color-mix(in srgb, var(--node-selected) 20%, transparent)" } : {}),
       }}
     >
+      {/* Disable/Passthrough badge */}
+      {disableState !== "enabled" && (
+        <div
+          className="absolute -top-2.5 left-3 z-10 flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider"
+          style={{
+            backgroundColor: isDisabled ? "var(--destructive)" : "#f59e0b",
+            color: "white",
+          }}
+        >
+          {isDisabled ? <Power className="h-2.5 w-2.5" /> : <SkipForward className="h-2.5 w-2.5" />}
+          {isDisabled ? "Disabled" : "Passthrough"}
+        </div>
+      )}
+
       {/* Toolbar on hover */}
       <div
         className={`absolute -top-10 right-0 flex gap-1 transition-opacity duration-200 ${
           selected ? "opacity-100" : "opacity-0 group-hover/node:opacity-100"
         }`}
       >
+        <button
+          onClick={() => toggleNodeDisable(id)}
+          className={`rounded-md border p-1.5 shadow-sm transition-colors ${
+            isDisabled ? "bg-destructive/20 border-destructive/50 text-destructive" :
+            isPassthrough ? "bg-amber-500/20 border-amber-500/50 text-amber-500" :
+            "bg-card border-border hover:bg-accent"
+          }`}
+          title={`State: ${disableState} (click to cycle)`}
+        >
+          {isDisabled ? <Power className="h-3 w-3" /> : isPassthrough ? <SkipForward className="h-3 w-3" /> : <Power className="h-3 w-3" />}
+        </button>
         <button
           onClick={() => setCollapsed(!collapsed)}
           className="rounded-md bg-card border border-border p-1.5 shadow-sm hover:bg-accent transition-colors"
@@ -378,8 +456,19 @@ export const PipelineNodeComponent = memo(function PipelineNodeComponent({
             alt="Preview"
             className="w-full rounded-md object-contain cursor-pointer hover:opacity-90 transition-opacity"
             style={{ maxHeight: 160, backgroundColor: "color-mix(in srgb, var(--muted) 30%, transparent)" }}
-            onClick={() => setFullscreenImage(previewUrl)}
+            onClick={() =>
+              isSegmentSelect && segmentSourceImage
+                ? setSegmentSelectOpen(true)
+                : setFullscreenImage(previewUrl)
+            }
           />
+          {/* SAM segment select hint */}
+          {isSegmentSelect && !processing && (
+            <div className="mt-1 text-center text-[10px] font-medium text-orange-400 cursor-pointer" onClick={() => setSegmentSelectOpen(true)}>
+              <MousePointer className="inline h-3 w-3 mr-1" />
+              Click image to select objects
+            </div>
+          )}
           {/* Progress indicator for batch/video processing */}
           {processing && typeof outputData?.progress === "string" && (
             <div className="mt-1.5 flex items-center gap-2">
@@ -530,6 +619,29 @@ export const PipelineNodeComponent = memo(function PipelineNodeComponent({
               );
             })}
         </>
+      )}
+
+      {/* Execution timer footer */}
+      {executionTime != null && !processing && (
+        <div
+          className="flex items-center justify-end gap-1.5 px-3 py-1.5"
+          style={{ borderTop: "1px solid color-mix(in srgb, var(--node-border) 40%, transparent)" }}
+        >
+          <Timer className="h-3 w-3 text-muted-foreground" />
+          <span className="text-[10px] text-muted-foreground font-medium tabular-nums">
+            {executionTime < 1000 ? `${executionTime}ms` : `${(executionTime / 1000).toFixed(2)}s`}
+          </span>
+        </div>
+      )}
+
+      {/* SAM Segment Select modal */}
+      {segmentSelectOpen && segmentSourceImage && (
+        <SegmentSelectModal
+          imageUrl={segmentSourceImage}
+          onApply={handleSegmentApply}
+          onUpdatePreview={handleSegmentUpdatePreview}
+          onClose={() => setSegmentSelectOpen(false)}
+        />
       )}
 
       {/* Fullscreen image preview */}

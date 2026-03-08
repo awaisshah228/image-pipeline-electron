@@ -10,6 +10,16 @@ const OPENCV_OPERATIONS = new Set([
   "face_detect_cv", "contour_detect", "canny_edge", "histogram_eq",
   "morphology", "color_space", "adaptive_threshold", "color_detect",
   "gaussian_blur_cv", "bilateral_filter", "people_detect", "cascade_detect",
+  // New operations
+  "pixelate", "high_pass", "add_noise", "surface_blur",
+  "split_channels", "merge_channels", "chroma_key",
+  "composite", "stack_images", "add_caption",
+  "bg_remove",
+  // AI operations (with fallbacks)
+  "upscale_image", "upscale_2x", "upscale_4x", "face_upscale",
+  "style_transfer", "colorize", "depth_map", "inpaint",
+  "video_frame",
+  "segment_select",
 ]);
 
 // Operations handled by Python Pillow (basic image transforms)

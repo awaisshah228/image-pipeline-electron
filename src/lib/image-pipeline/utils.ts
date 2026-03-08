@@ -31,6 +31,7 @@ export function getCategoryColor(category: string): string {
     ai_upscale: "#ef4444",
     ai_enhance: "#ec4899",
     computer_vision: "#0ea5e9",
+    image_channel: "#8b5cf6",
     utility: "#6b7280",
     batch: "#14b8a6",
   };
