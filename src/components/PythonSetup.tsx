@@ -181,7 +181,7 @@ export function PythonSetup({ onReady }: Props) {
   })();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90">
       <div className="w-[540px] rounded-xl border border-neutral-800 bg-neutral-900 shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-neutral-800 px-5 py-4">
