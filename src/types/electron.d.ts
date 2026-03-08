@@ -117,6 +117,7 @@ interface ElectronAPI {
     // Events
     onSetupProgress(callback: (data: { stage: string; percentage: number; message: string }) => void): () => void;
     onInstallProgress(callback: (output: string) => void): () => void;
+    onInstallPackageProgress(callback: (data: { installed: number; total: number; current: string; percentage: number }) => void): () => void;
   };
 
   ffmpeg: {

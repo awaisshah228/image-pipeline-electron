@@ -130,9 +130,16 @@ export function registerPythonBackendHandlers(ipcMain: IpcMain, getMainWindow: (
     const reqPath = getRequirementsPath();
     const win = getMainWindow();
 
-    const success = await installDependencies(pythonInfo.path, reqPath, (output) => {
-      win?.webContents.send("python:installProgress", output);
-    });
+    const success = await installDependencies(
+      pythonInfo.path,
+      reqPath,
+      (output) => {
+        win?.webContents.send("python:installProgress", output);
+      },
+      (progress) => {
+        win?.webContents.send("python:installPackageProgress", progress);
+      }
+    );
 
     if (success) {
       await saveInstalledPackages(pythonInfo.path);

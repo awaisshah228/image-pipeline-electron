@@ -258,6 +258,19 @@ export async function installPipDependencies(
     // ensurepip may already be done
   });
 
+  // Count packages in requirements.txt for progress tracking
+  let totalPackages = 1;
+  try {
+    const reqContent = await fs.readFile(requirementsPath, "utf-8");
+    totalPackages = Math.max(
+      reqContent.split("\n").filter((l) => l.trim() && !l.trim().startsWith("#")).length,
+      1
+    );
+  } catch {}
+
+  let downloadedCount = 0;
+  let currentPkg = "";
+
   // Install from requirements.txt
   return new Promise((resolve, reject) => {
     const { spawn } = require("node:child_process");
@@ -273,26 +286,41 @@ export async function installPipDependencies(
       }
     );
 
-    let lineCount = 0;
-
     proc.stdout.on("data", (data: Buffer) => {
       const text = data.toString();
-      lineCount++;
       console.log("[pip]", text.trim());
-      // Approximate progress based on output lines
-      const approxPct = Math.min(lineCount * 2, 95);
-      onProgress?.(approxPct, "install-deps", text.trim());
+
+      for (const line of text.split("\n")) {
+        const trimmed = line.trim();
+        const collectMatch = trimmed.match(/^Collecting\s+([^\s(>=<!\[]+)/i);
+        if (collectMatch) {
+          currentPkg = collectMatch[1];
+        }
+        if (trimmed.startsWith("Downloading ")) {
+          downloadedCount = Math.min(downloadedCount + 1, totalPackages);
+        }
+        if (trimmed.startsWith("Successfully installed")) {
+          downloadedCount = totalPackages;
+        }
+      }
+
+      const pct = Math.min(Math.round((downloadedCount / totalPackages) * 100), 95);
+      const msg = currentPkg
+        ? `Installing ${currentPkg}... (${downloadedCount}/${totalPackages})`
+        : text.trim();
+      onProgress?.(pct, "install-deps", msg);
     });
 
     proc.stderr.on("data", (data: Buffer) => {
       const text = data.toString();
       console.warn("[pip]", text.trim());
-      onProgress?.(0, "install-deps", text.trim());
+      const pct = Math.min(Math.round((downloadedCount / totalPackages) * 100), 95);
+      onProgress?.(pct, "install-deps", text.trim());
     });
 
     proc.on("close", (code: number) => {
       if (code === 0) {
-        onProgress?.(100, "install-deps", "All packages installed");
+        onProgress?.(100, "install-deps", `All ${totalPackages} packages installed`);
         resolve();
       } else {
         reject(new Error(`pip install failed with exit code ${code}`));
