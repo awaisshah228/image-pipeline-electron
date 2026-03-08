@@ -113,7 +113,7 @@ export const PIPELINE_TEMPLATES: PipelineTemplate[] = [
             { name: "image", types: ["Image"] }),
           mkEdge("tpl_e2", "tpl_yolo", "tpl_vsave",
             { name: "image", types: ["Image"] },
-            { name: "frames", types: ["ImageList"] }),
+            { name: "frames", types: ["ImageList", "Image"] }),
           mkEdge("tpl_e3", "tpl_yolo", "tpl_bsave",
             { name: "objects", types: ["ImageList"] },
             { name: "images", types: ["ImageList"] }),
