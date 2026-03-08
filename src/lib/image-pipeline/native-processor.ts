@@ -3,6 +3,22 @@
 
 const api = () => window.electronAPI?.python;
 
+/**
+ * Convert a blob: URL to a data: URL so the Python backend can decode it.
+ * Passes through strings that are already data URLs or base64.
+ */
+async function ensureDataUrl(url: string): Promise<string> {
+  if (!url.startsWith("blob:")) return url;
+  const resp = await fetch(url);
+  const blob = await resp.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 // ── Operation Routing ──
 
 // Operations handled by Python OpenCV
@@ -65,6 +81,9 @@ export async function processImage(
   if (!python) {
     throw new Error("Python backend not available. Start it from the setup screen.");
   }
+
+  // Convert blob URLs to data URLs for the Python backend
+  imageDataUrl = await ensureDataUrl(imageDataUrl);
 
   if (operation === "yolo_detect") {
     const model = normalizeModelName((params.model_url as string) ?? (params.model as string) ?? "yolov8n.pt");
@@ -169,6 +188,9 @@ export async function processPipeline(
   const python = api();
   if (!python) throw new Error("Python backend not available.");
 
+  // Convert blob URLs to data URLs for the Python backend
+  imageDataUrl = await ensureDataUrl(imageDataUrl);
+
   const result = await python.request<{
     type: string; image: string; metadata: Record<string, unknown>;
   }>("POST", "/pipeline/process", { image: imageDataUrl, steps });
@@ -189,6 +211,9 @@ export async function submitFrameToQueue(
 ): Promise<{ queueSize: number }> {
   const python = api();
   if (!python) throw new Error("Python backend not available.");
+
+  // Convert blob URLs to data URLs for the Python backend
+  imageDataUrl = await ensureDataUrl(imageDataUrl);
 
   const result = await python.request<{ type: string; queue_size: number }>(
     "POST", "/queue/submit",
