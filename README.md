@@ -89,7 +89,29 @@ public/image-pipeline-nodes/
 
 - **Node.js** 18+
 - **Python** 3.9+ (3.10+ recommended)
-- **ffmpeg** (optional, for video encoding — falls back to browser encoder)
+- **ffmpeg** — Required for video encoding (combining frames into MP4/WebM)
+
+### 0. Install ffmpeg
+
+ffmpeg is **not bundled** — you must install it separately:
+
+```bash
+# macOS
+brew install ffmpeg
+
+# Ubuntu / Debian
+sudo apt install ffmpeg
+
+# Windows
+winget install ffmpeg
+```
+
+Verify it's installed:
+```bash
+ffmpeg -version
+```
+
+> Without ffmpeg, the app falls back to the browser's MediaRecorder API (lower quality WebM only). For best results (H264 MP4, correct FPS), install ffmpeg.
 
 ### 1. Install Node Dependencies
 
