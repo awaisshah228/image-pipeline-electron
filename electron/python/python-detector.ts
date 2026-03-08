@@ -158,7 +158,7 @@ sys.stderr = _real_stderr
 sys.stdout = _real_stdout
 print(json.dumps({"installed": installed, "missing": missing}))
 `,
-    ], { timeout: 30000 });
+    ], { timeout: 60000 });
 
     // Extract JSON from stdout — skip any non-JSON lines libraries may print
     const lines = stdout.trim().split("\n");
@@ -200,22 +200,7 @@ except Exception as e:
     print(f"YOLOv8n skip: {e}")
 sys.stdout.flush()
 
-print("Downloading MobileSAM model (~10MB)...")
-sys.stdout.flush()
-try:
-    import urllib.request
-    from pathlib import Path
-    ckpt_dir = Path.home() / ".mobile_sam"
-    ckpt_dir.mkdir(parents=True, exist_ok=True)
-    ckpt_path = ckpt_dir / "mobile_sam.pt"
-    if not ckpt_path.exists():
-        urllib.request.urlretrieve("https://github.com/ChaoningZhang/MobileSAM/raw/master/weights/mobile_sam.pt", str(ckpt_path))
-    print(f"MobileSAM ready ({ckpt_path.stat().st_size // 1024 // 1024}MB)")
-except Exception as e:
-    print(f"MobileSAM skip: {e}")
-sys.stdout.flush()
-
-print("All models ready! (BiRefNet bg-removal model downloads on first use)")
+print("All models ready! (MobileSAM & BiRefNet download on first use from AI Models manager)")
 `], onOutput);
 
   return true;
