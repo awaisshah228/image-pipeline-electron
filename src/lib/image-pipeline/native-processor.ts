@@ -110,12 +110,21 @@ export async function processImage(
 }
 
 /**
- * Normalize YOLO model name: strip paths, convert .onnx → .pt
+ * Normalize YOLO model name: strip paths. Only convert .onnx → .pt for
+ * known Ultralytics model names (yolov5/v8/v11/yolo11 etc.) since those
+ * are typically distributed as .pt. Custom models keep their original extension.
  */
 function normalizeModelName(raw: string): string {
   let model = raw;
+  // Handle blob: URLs from web uploads (not applicable in Electron but just in case)
+  if (model.startsWith("blob:") && model.includes("::")) {
+    model = model.split("::")[1] ?? model;
+  }
   if (model.includes("/")) model = model.split("/").pop() ?? "yolov8n.pt";
-  if (model.endsWith(".onnx")) model = model.replace(/\.onnx$/, ".pt");
+  // Only convert known Ultralytics base models from .onnx → .pt
+  if (model.endsWith(".onnx") && /^yolo(v?\d+[nslmx]?)\.onnx$/i.test(model)) {
+    model = model.replace(/\.onnx$/, ".pt");
+  }
   return model || "yolov8n.pt";
 }
 
