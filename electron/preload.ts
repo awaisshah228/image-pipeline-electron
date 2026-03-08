@@ -115,6 +115,11 @@ contextBridge.exposeInMainWorld("electronAPI", {
       ipcRenderer.on("python:setupProgress", handler);
       return () => ipcRenderer.removeListener("python:setupProgress", handler);
     },
+    onInstallPackageProgress: (callback: (data: { installed: number; total: number; current: string; percentage: number }) => void) => {
+      const handler = (_e: unknown, data: { installed: number; total: number; current: string; percentage: number }) => callback(data);
+      ipcRenderer.on("python:installPackageProgress", handler);
+      return () => ipcRenderer.removeListener("python:installPackageProgress", handler);
+    },
   },
 
   // ── FFmpeg (direct Node.js, no Python roundtrip) ──

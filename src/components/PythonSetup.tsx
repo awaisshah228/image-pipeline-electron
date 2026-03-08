@@ -6,9 +6,17 @@ import {
   Loader2,
   Cpu,
   AlertTriangle,
+  Package,
 } from "lucide-react";
 
 type SetupStage = "detect" | "download" | "check-deps" | "install-deps" | "starting" | "ready" | "error";
+
+interface PackageProgress {
+  installed: number;
+  total: number;
+  current: string;
+  percentage: number;
+}
 
 interface Props {
   onReady: () => void;
@@ -22,9 +30,16 @@ export function PythonSetup({ onReady }: Props) {
   const [logs, setLogs] = useState<string[]>([]);
   const [backendUrl, setBackendUrl] = useState<string | null>(null);
   const [hasGpu, setHasGpu] = useState(false);
+  const [pkgProgress, setPkgProgress] = useState<PackageProgress | null>(null);
   const started = useRef(false);
+  const logsEndRef = useRef<HTMLDivElement>(null);
 
   const api = window.electronAPI?.python;
+
+  // Auto-scroll logs
+  useEffect(() => {
+    logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [logs]);
 
   // Run the full automatic setup flow
   useEffect(() => {
@@ -39,9 +54,17 @@ export function PythonSetup({ onReady }: Props) {
       setLogs((prev) => [...prev.slice(-200), data.message]);
     });
 
-    // Listen for install output
+    // Listen for raw install output
     const cleanupInstall = api.onInstallProgress?.((output: string) => {
       setLogs((prev) => [...prev.slice(-200), output]);
+    });
+
+    // Listen for per-package progress
+    const cleanupPkg = api.onInstallPackageProgress?.((data: PackageProgress) => {
+      setPkgProgress(data);
+      if (data.percentage > 0) {
+        setPercentage(data.percentage);
+      }
     });
 
     (async () => {
@@ -53,6 +76,7 @@ export function PythonSetup({ onReady }: Props) {
         setStage("starting");
         setMessage("Starting backend server...");
         setPercentage(0);
+        setPkgProgress(null);
 
         const startResult = await api.start();
         setBackendUrl(startResult.url);
@@ -79,6 +103,7 @@ export function PythonSetup({ onReady }: Props) {
     return () => {
       cleanupProgress?.();
       cleanupInstall?.();
+      cleanupPkg?.();
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -88,15 +113,6 @@ export function PythonSetup({ onReady }: Props) {
   }, [onReady]);
 
   const handleRetry = useCallback(() => {
-    setError(null);
-    setLogs([]);
-    started.current = false;
-    setStage("detect");
-    setPercentage(0);
-    setMessage("Looking for Python...");
-    // Force re-run by toggling a state
-    started.current = false;
-    // Trigger the effect again
     window.location.reload();
   }, []);
 
@@ -111,9 +127,27 @@ export function PythonSetup({ onReady }: Props) {
     return "pending";
   }
 
+  // Derive deps step status (combines check-deps and install-deps into one row)
+  const depsStatus = (() => {
+    if (getStepStatus("install-deps") === "done" || (getStepStatus("check-deps") === "done" && getStepStatus("install-deps") === "done")) return "done";
+    if (stage === "check-deps" || stage === "install-deps") return "loading";
+    if (getStepStatus("check-deps") === "error" || getStepStatus("install-deps") === "error") return "error";
+    return "pending";
+  })();
+
+  const depsDetail = (() => {
+    if (stage === "check-deps") return "Checking installed packages...";
+    if (stage === "install-deps" && pkgProgress) {
+      return `Installing ${pkgProgress.current || "packages"}... (${pkgProgress.installed}/${pkgProgress.total})`;
+    }
+    if (stage === "install-deps") return `Installing... ${percentage}%`;
+    if (depsStatus === "done") return "All packages installed";
+    return undefined;
+  })();
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
-      <div className="w-[520px] rounded-xl border border-neutral-800 bg-neutral-900 shadow-2xl overflow-hidden">
+      <div className="w-[540px] rounded-xl border border-neutral-800 bg-neutral-900 shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-3 border-b border-neutral-800 px-5 py-4">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-orange-500/10">
@@ -128,7 +162,7 @@ export function PythonSetup({ onReady }: Props) {
         {/* Content */}
         <div className="px-5 py-4 space-y-4">
           {/* Step indicators */}
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             <StepRow
               label="Detect Python"
               status={getStepStatus("detect")}
@@ -138,24 +172,16 @@ export function PythonSetup({ onReady }: Props) {
               <StepRow
                 label="Download Python runtime"
                 status={getStepStatus("download")}
-                detail={getStepStatus("download") === "loading" ? `${percentage}%` : undefined}
+                detail={getStepStatus("download") === "loading" ? `${Math.round(percentage)}%` : undefined}
+                progress={stage === "download" ? percentage : undefined}
               />
             )}
             <StepRow
-              label="Check & install dependencies"
-              status={
-                getStepStatus("check-deps") === "done" && getStepStatus("install-deps") === "done"
-                  ? "done"
-                  : getStepStatus("check-deps") === "loading" || getStepStatus("install-deps") === "loading"
-                    ? "loading"
-                    : getStepStatus("check-deps") === "done" || getStepStatus("install-deps") !== "pending"
-                      ? getStepStatus("install-deps")
-                      : "pending"
-              }
-              detail={
-                (stage === "install-deps") ? `Installing... ${percentage}%` :
-                (stage === "check-deps") ? "Checking..." : undefined
-              }
+              label="Install dependencies"
+              status={depsStatus}
+              detail={depsDetail}
+              progress={stage === "install-deps" ? percentage : undefined}
+              icon={<Package className="h-3.5 w-3.5" />}
             />
             <StepRow
               label="Start backend server"
@@ -164,26 +190,60 @@ export function PythonSetup({ onReady }: Props) {
             />
           </div>
 
-          {/* Progress bar */}
-          {stage !== "ready" && stage !== "error" && (
-            <div className="h-1 rounded-full bg-neutral-800 overflow-hidden">
-              <div
-                className="h-full rounded-full bg-orange-500 transition-all duration-300"
-                style={{ width: `${percentage}%` }}
-              />
+          {/* Per-package progress during install */}
+          {stage === "install-deps" && pkgProgress && pkgProgress.total > 0 && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-neutral-400 truncate max-w-[300px]">
+                  {pkgProgress.current ? `Installing ${pkgProgress.current}` : "Installing packages..."}
+                </span>
+                <span className="text-[11px] text-neutral-500 tabular-nums">
+                  {pkgProgress.installed}/{pkgProgress.total} packages
+                </span>
+              </div>
+              <div className="h-1.5 rounded-full bg-neutral-800 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-orange-500 transition-all duration-500 ease-out"
+                  style={{ width: `${pkgProgress.percentage}%` }}
+                />
+              </div>
             </div>
           )}
 
-          {/* Current message */}
-          <p className="text-[11px] text-neutral-500 truncate">{message}</p>
-
-          {/* Install logs (scrollable) */}
-          {(stage === "install-deps" || stage === "download") && logs.length > 0 && (
-            <div className="max-h-32 overflow-auto rounded-lg bg-black p-3 font-mono text-[11px] text-neutral-400">
-              {logs.slice(-50).map((log, i) => (
-                <div key={i}>{log}</div>
-              ))}
+          {/* Download progress bar */}
+          {stage === "download" && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] text-neutral-400">Downloading Python runtime...</span>
+                <span className="text-[11px] text-neutral-500 tabular-nums">{Math.round(percentage)}%</span>
+              </div>
+              <div className="h-1.5 rounded-full bg-neutral-800 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-orange-500 transition-all duration-300"
+                  style={{ width: `${percentage}%` }}
+                />
+              </div>
             </div>
+          )}
+
+          {/* Current status message */}
+          {stage !== "install-deps" && stage !== "download" && stage !== "ready" && stage !== "error" && (
+            <p className="text-[11px] text-neutral-500 truncate">{message}</p>
+          )}
+
+          {/* Install logs (scrollable, collapsed by default during install) */}
+          {(stage === "install-deps" || stage === "download") && logs.length > 0 && (
+            <details className="group">
+              <summary className="text-[11px] text-neutral-500 cursor-pointer hover:text-neutral-400 select-none">
+                Show logs ({logs.length} lines)
+              </summary>
+              <div className="mt-1.5 max-h-28 overflow-auto rounded-lg bg-black p-3 font-mono text-[10px] text-neutral-500 leading-relaxed">
+                {logs.slice(-80).map((log, i) => (
+                  <div key={i} className="whitespace-pre-wrap break-all">{log.trim()}</div>
+                ))}
+                <div ref={logsEndRef} />
+              </div>
+            </details>
           )}
 
           {/* Error */}
@@ -239,27 +299,43 @@ function StepRow({
   label,
   status,
   detail,
+  progress,
+  icon,
 }: {
   label: string;
   status: "pending" | "loading" | "done" | "error";
   detail?: string;
+  progress?: number;
+  icon?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-3">
-      <div className="flex h-5 w-5 items-center justify-center">
-        {status === "loading" && <Loader2 className="h-4 w-4 text-orange-400 animate-spin" />}
-        {status === "done" && <Check className="h-4 w-4 text-green-400" />}
-        {status === "error" && <X className="h-4 w-4 text-red-400" />}
-        {status === "pending" && <div className="h-2 w-2 rounded-full bg-neutral-600" />}
+    <div className="space-y-1">
+      <div className="flex items-center gap-3">
+        <div className="flex h-5 w-5 items-center justify-center">
+          {status === "loading" && <Loader2 className="h-4 w-4 text-orange-400 animate-spin" />}
+          {status === "done" && <Check className="h-4 w-4 text-green-400" />}
+          {status === "error" && <X className="h-4 w-4 text-red-400" />}
+          {status === "pending" && <div className="h-2 w-2 rounded-full bg-neutral-600" />}
+        </div>
+        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+          {icon && status === "loading" && <span className="text-orange-400">{icon}</span>}
+          <span className={`text-xs font-medium ${status === "done" ? "text-green-400" : status === "error" ? "text-red-400" : "text-neutral-300"}`}>
+            {label}
+          </span>
+          {detail && (
+            <span className="ml-1 text-[11px] text-neutral-500 truncate">{detail}</span>
+          )}
+        </div>
       </div>
-      <div className="flex-1 min-w-0">
-        <span className={`text-xs font-medium ${status === "done" ? "text-green-400" : status === "error" ? "text-red-400" : "text-neutral-300"}`}>
-          {label}
-        </span>
-        {detail && (
-          <span className="ml-2 text-[11px] text-neutral-500">{detail}</span>
-        )}
-      </div>
+      {/* Inline mini progress bar for active steps */}
+      {status === "loading" && progress !== undefined && progress > 0 && (
+        <div className="ml-8 h-0.5 rounded-full bg-neutral-800 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-orange-500/60 transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
+        </div>
+      )}
     </div>
   );
 }
