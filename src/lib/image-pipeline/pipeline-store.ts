@@ -400,10 +400,13 @@ async function processNodeChainLive(
   if (steps.length > 0) {
     try {
       const pipelineSteps = steps.map(({ operation, params }) => ({ operation, params }));
+      console.log("[LiveProcess] Sending", pipelineSteps.length, "steps:", pipelineSteps.map(s => s.operation));
       const result = await processPipeline(frameDataUrl, pipelineSteps);
       resultUrl = result.dataUrl;
       metadata = result.metadata;
-    } catch {
+      console.log("[LiveProcess] Got result, dataUrl length:", resultUrl?.length, "metadata keys:", metadata ? Object.keys(metadata) : "none");
+    } catch (err) {
+      console.error("[LiveProcess] Pipeline failed:", err);
       _liveQueueCount--;
       return;
     }

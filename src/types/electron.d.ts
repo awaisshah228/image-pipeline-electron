@@ -100,7 +100,7 @@ interface ElectronAPI {
     status(): Promise<PythonBackendStatus>;
     request<T = unknown>(method: string, endpoint: string, body?: unknown): Promise<T>;
     // High-level APIs
-    yoloDetect(imageDataUrl: string, options?: { model?: string; confidence?: number; iou?: number }): Promise<PythonYoloResult>;
+    yoloDetect(imageDataUrl: string, options?: { model?: string; confidence?: number; iou?: number; filter_classes?: string[] }): Promise<PythonYoloResult>;
     cvProcess(imageDataUrl: string, operation: string, params?: Record<string, unknown>): Promise<PythonCvResult>;
     imageProcess(imageDataUrl: string, operation: string, params?: Record<string, unknown>): Promise<PythonImageResult>;
     loadModel(modelName: string): Promise<{ type: string; model: string; device: string }>;

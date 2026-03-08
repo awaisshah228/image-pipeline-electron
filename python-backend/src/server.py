@@ -144,11 +144,11 @@ async def yolo_detect(request: Request):
     model_name = data.get("model", "yolov8n.pt")
     confidence = data.get("confidence", 0.25)
     iou = data.get("iou", 0.45)
+    filter_classes = data.get("filter_classes", [])  # list of class names to filter
 
     # Normalize model name: if path doesn't exist, extract basename and use .pt
     if model_name and not os.path.isfile(model_name):
         basename = os.path.basename(model_name)
-        # Convert .onnx to .pt for Ultralytics (it auto-downloads .pt models)
         if basename.endswith(".onnx"):
             basename = basename.replace(".onnx", ".pt")
         model_name = basename
@@ -166,14 +166,23 @@ async def yolo_detect(request: Request):
 
         model = _models[model_name]
 
+        # Resolve filter class names to class indices
+        class_indices = None
+        if filter_classes:
+            name_to_idx = {v.lower(): k for k, v in model.names.items()}
+            class_indices = [name_to_idx[c.lower()] for c in filter_classes if c.lower() in name_to_idx]
+            if not class_indices:
+                class_indices = None  # no valid classes found, show all
+
         # Decode image
         img = decode_image(image_data)
 
-        # Run inference
+        # Run inference (classes param filters at detection level)
         results = model.predict(
             img,
             conf=confidence,
             iou=iou,
+            classes=class_indices,
             device=_device,
             verbose=False,
         )
@@ -812,9 +821,18 @@ async def pipeline_process(request: Request):
                     _models[model_name] = YOLO(model_name)
                     if _device != "cpu": _models[model_name].to(_device)
 
+                # Resolve filter classes to indices
+                fc = params.get("filter_classes", [])
+                class_indices = None
+                if fc:
+                    n2i = {v.lower(): k for k, v in _models[model_name].names.items()}
+                    class_indices = [n2i[c.lower()] for c in fc if c.lower() in n2i]
+                    if not class_indices: class_indices = None
+
                 results = _models[model_name].predict(
                     img, conf=params.get("confidence", 0.25),
-                    iou=params.get("iou", 0.45), device=_device, verbose=False,
+                    iou=params.get("iou", 0.45), classes=class_indices,
+                    device=_device, verbose=False,
                 )
                 result = results[0]
                 img = result.plot()  # annotated image becomes input for next step
@@ -1228,9 +1246,15 @@ async def pipeline_batch(request: Request):
                     if operation == "yolo_detect":
                         model_name = params.get("model", "yolov8n.pt")
                         model = _models[model_name]
+                        fc = params.get("filter_classes", [])
+                        ci = None
+                        if fc:
+                            n2i = {v.lower(): k for k, v in model.names.items()}
+                            ci = [n2i[c.lower()] for c in fc if c.lower() in n2i] or None
                         results = model.predict(
                             img, conf=params.get("confidence", 0.25),
-                            iou=params.get("iou", 0.45), device=_device, verbose=False,
+                            iou=params.get("iou", 0.45), classes=ci,
+                            device=_device, verbose=False,
                         )
                         img = results[0].plot()
 

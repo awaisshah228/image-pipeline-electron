@@ -58,10 +58,18 @@ export async function processImage(
 
   if (operation === "yolo_detect") {
     const model = normalizeModelName((params.model_url as string) ?? (params.model as string) ?? "yolov8n.pt");
+    // Parse filter classes from class_names field (tags input → array of strings)
+    const classNames = params.class_names;
+    const filterClasses: string[] = Array.isArray(classNames)
+      ? classNames
+      : typeof classNames === "string" && classNames.trim()
+        ? classNames.split(",").map((s: string) => s.trim()).filter(Boolean)
+        : [];
     const result = await python.yoloDetect(imageDataUrl, {
       model,
       confidence: Number(params.confidence ?? params.conf_threshold ?? 0.25),
       iou: Number(params.iou ?? params.iou_threshold ?? 0.45),
+      filter_classes: filterClasses.length > 0 ? filterClasses : undefined,
     });
 
     return {
@@ -115,6 +123,15 @@ export function buildPipelineStep(
     );
     params.confidence = Number(params.confidence ?? params.conf_threshold ?? 0.25);
     params.iou = Number(params.iou ?? params.iou_threshold ?? 0.45);
+    // Parse filter classes from class_names field (tags → array)
+    const cn = params.class_names;
+    const fc: string[] = Array.isArray(cn)
+      ? cn
+      : typeof cn === "string" && cn.trim()
+        ? cn.split(",").map((s: string) => s.trim()).filter(Boolean)
+        : [];
+    params.filter_classes = fc.length > 0 ? fc : [];
+    delete params.class_names;
     delete params.model_url;
     delete params.conf_threshold;
     delete params.iou_threshold;

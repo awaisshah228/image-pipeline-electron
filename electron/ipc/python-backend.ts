@@ -106,13 +106,14 @@ export function registerPythonBackendHandlers(ipcMain: IpcMain, getMainWindow: (
   // YOLO detect via Python (GPU accelerated)
   ipcMain.handle(
     "python:yoloDetect",
-    async (_e, imageDataUrl: string, options?: { model?: string; confidence?: number; iou?: number }) => {
+    async (_e, imageDataUrl: string, options?: { model?: string; confidence?: number; iou?: number; filter_classes?: string[] }) => {
       if (!backend?.running) throw new Error("Python backend not running");
       return backend.request("POST", "/yolo/detect", {
         image: imageDataUrl,
         model: options?.model ?? "yolov8n.pt",
         confidence: options?.confidence ?? 0.25,
         iou: options?.iou ?? 0.45,
+        filter_classes: options?.filter_classes ?? [],
       });
     }
   );

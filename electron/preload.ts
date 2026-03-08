@@ -86,7 +86,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     request: (method: string, endpoint: string, body?: unknown) =>
       ipcRenderer.invoke("python:request", method, endpoint, body),
     // High-level task APIs
-    yoloDetect: (imageDataUrl: string, options?: { model?: string; confidence?: number; iou?: number }) =>
+    yoloDetect: (imageDataUrl: string, options?: { model?: string; confidence?: number; iou?: number; filter_classes?: string[] }) =>
       ipcRenderer.invoke("python:yoloDetect", imageDataUrl, options),
     cvProcess: (imageDataUrl: string, operation: string, params?: Record<string, unknown>) =>
       ipcRenderer.invoke("python:cvProcess", imageDataUrl, operation, params),
