@@ -1,11 +1,42 @@
 import { type IpcMain, type BrowserWindow } from "electron";
 import { PythonBackendProcess, findFreePort } from "../python/python-process";
 import { detectPython, checkDependencies, installDependencies, type PythonInfo } from "../python/python-detector";
+import {
+  setupIntegratedPython,
+  installPipDependencies,
+  getIntegratedPythonDir,
+} from "../python/integrated-python";
 import path from "node:path";
+import fs from "node:fs";
+import fsPromises from "node:fs/promises";
 import { app } from "electron";
 
 let backend: PythonBackendProcess | null = null;
 let pythonInfo: PythonInfo | null = null;
+
+/** File that records which pip packages we installed, for clean uninstall */
+function getInstalledDepsManifestPath(): string {
+  return path.join(app.getPath("userData"), "installed-pip-packages.json");
+}
+
+/** Save the list of packages we installed */
+async function saveInstalledPackages(pythonPath: string): Promise<void> {
+  try {
+    const { execFile } = require("node:child_process");
+    const { promisify } = require("node:util");
+    const execFileAsync = promisify(execFile);
+    const { stdout } = await execFileAsync(pythonPath, [
+      "-m", "pip", "list", "--format=json",
+    ], { timeout: 15000, env: { ...process.env, PYTHONNOUSERSITE: "1" } });
+    const packages = JSON.parse(stdout.trim());
+    await fsPromises.writeFile(
+      getInstalledDepsManifestPath(),
+      JSON.stringify({ pythonPath, packages, installedAt: new Date().toISOString() }, null, 2)
+    );
+  } catch (err) {
+    console.warn("[python-backend] Failed to save package manifest:", err);
+  }
+}
 
 function getRequirementsPath(): string {
   const candidates = [
@@ -15,7 +46,7 @@ function getRequirementsPath(): string {
   ];
   for (const c of candidates) {
     try {
-      require("node:fs").accessSync(c);
+      fs.accessSync(c);
       return c;
     } catch {}
   }
@@ -23,6 +54,64 @@ function getRequirementsPath(): string {
 }
 
 export function registerPythonBackendHandlers(ipcMain: IpcMain, getMainWindow: () => BrowserWindow | null) {
+  // ── Full setup flow (like chaiNNer): detect/download Python → install deps → start ──
+  ipcMain.handle("python:setup", async () => {
+    const win = getMainWindow();
+    const sendProgress = (data: { stage: string; percentage: number; message: string }) => {
+      win?.webContents.send("python:setupProgress", data);
+    };
+
+    // Step 1: Try to find system Python first
+    sendProgress({ stage: "detect", percentage: 0, message: "Looking for Python..." });
+    pythonInfo = await detectPython();
+
+    if (pythonInfo) {
+      sendProgress({ stage: "detect", percentage: 100, message: `Found Python ${pythonInfo.version}` });
+    } else {
+      // Step 2: No system Python — download integrated Python
+      sendProgress({ stage: "download", percentage: 0, message: "Downloading Python runtime..." });
+
+      const integratedPath = await setupIntegratedPython((pct, stage, msg) => {
+        sendProgress({ stage, percentage: pct, message: msg });
+      });
+
+      // Re-detect to fill in PythonInfo
+      pythonInfo = await detectPython();
+      if (!pythonInfo) {
+        pythonInfo = {
+          path: integratedPath,
+          version: "3.11.5",
+          hasTorch: false,
+          hasCuda: false,
+          isIntegrated: true,
+        };
+      }
+    }
+
+    // Step 3: Check & install dependencies
+    sendProgress({ stage: "check-deps", percentage: 0, message: "Checking dependencies..." });
+    const deps = await checkDependencies(pythonInfo.path);
+
+    if (deps.missing.length > 0) {
+      sendProgress({ stage: "install-deps", percentage: 0, message: `Installing ${deps.missing.length} missing packages...` });
+      const reqPath = getRequirementsPath();
+
+      await installPipDependencies(pythonInfo.path, reqPath, (pct, _stage, msg) => {
+        sendProgress({ stage: "install-deps", percentage: pct, message: msg });
+      });
+
+      // Save manifest for cleanup on uninstall
+      await saveInstalledPackages(pythonInfo.path);
+    }
+
+    sendProgress({ stage: "ready", percentage: 100, message: "Python environment ready" });
+
+    return {
+      python: pythonInfo,
+      depsInstalled: deps.missing.length > 0,
+    };
+  });
+
   // Detect Python
   ipcMain.handle("python:detect", async () => {
     pythonInfo = await detectPython();
@@ -41,9 +130,20 @@ export function registerPythonBackendHandlers(ipcMain: IpcMain, getMainWindow: (
     const reqPath = getRequirementsPath();
     const win = getMainWindow();
 
-    const success = await installDependencies(pythonInfo.path, reqPath, (output) => {
-      win?.webContents.send("python:installProgress", output);
-    });
+    const success = await installDependencies(
+      pythonInfo.path,
+      reqPath,
+      (output) => {
+        win?.webContents.send("python:installProgress", output);
+      },
+      (progress) => {
+        win?.webContents.send("python:installPackageProgress", progress);
+      }
+    );
+
+    if (success) {
+      await saveInstalledPackages(pythonInfo.path);
+    }
 
     return success;
   });
@@ -54,7 +154,7 @@ export function registerPythonBackendHandlers(ipcMain: IpcMain, getMainWindow: (
 
     if (!pythonInfo) {
       pythonInfo = await detectPython();
-      if (!pythonInfo) throw new Error("Python not found");
+      if (!pythonInfo) throw new Error("Python not found. Run python:setup first.");
     }
 
     const port = await findFreePort();
@@ -176,6 +276,82 @@ export function registerPythonBackendHandlers(ipcMain: IpcMain, getMainWindow: (
   ipcMain.handle("python:systemInfo", async () => {
     if (!backend?.running) throw new Error("Python backend not running");
     return backend.request("GET", "/system-info");
+  });
+
+  // ── Cleanup / Uninstall ──
+
+  // Full cleanup: remove integrated Python, pip packages, and manifest
+  ipcMain.handle("python:cleanup", async () => {
+    // Stop backend first
+    if (backend) {
+      await backend.kill();
+      backend = null;
+    }
+
+    const removed: string[] = [];
+
+    // Remove integrated Python directory
+    const integratedDir = getIntegratedPythonDir();
+    try {
+      await fsPromises.rm(integratedDir, { recursive: true, force: true });
+      removed.push("integrated-python");
+    } catch {}
+
+    // Remove pip package manifest
+    const manifestPath = getInstalledDepsManifestPath();
+    try {
+      await fsPromises.rm(manifestPath, { force: true });
+      removed.push("package-manifest");
+    } catch {}
+
+    // Remove downloaded AI models from userData
+    const modelsDir = path.join(app.getPath("userData"), "models");
+    try {
+      await fsPromises.rm(modelsDir, { recursive: true, force: true });
+      removed.push("ai-models");
+    } catch {}
+
+    // Remove pipeline temp frames
+    const framesDir = path.join(app.getPath("userData"), "pipeline_frames");
+    try {
+      await fsPromises.rm(framesDir, { recursive: true, force: true });
+      removed.push("temp-frames");
+    } catch {}
+
+    pythonInfo = null;
+
+    return { removed };
+  });
+
+  // Get info about what's installed (for settings/about UI)
+  ipcMain.handle("python:installInfo", async () => {
+    const manifestPath = getInstalledDepsManifestPath();
+    const integratedDir = getIntegratedPythonDir();
+
+    let manifest = null;
+    try {
+      const raw = await fsPromises.readFile(manifestPath, "utf-8");
+      manifest = JSON.parse(raw);
+    } catch {}
+
+    let integratedSize = 0;
+    try {
+      // Get rough directory size
+      const { execFile } = require("node:child_process");
+      const { promisify } = require("node:util");
+      const execFileAsync = promisify(execFile);
+      if (process.platform !== "win32") {
+        const { stdout } = await execFileAsync("du", ["-sk", integratedDir], { timeout: 10000 });
+        integratedSize = parseInt(stdout.split("\t")[0], 10) * 1024; // bytes
+      }
+    } catch {}
+
+    return {
+      python: pythonInfo,
+      manifest,
+      integratedPythonPath: integratedDir,
+      integratedPythonSizeBytes: integratedSize,
+    };
   });
 }
 

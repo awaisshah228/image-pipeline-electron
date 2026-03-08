@@ -76,6 +76,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
 
   // ── Python Backend ──
   python: {
+    // Full setup flow: detect/download Python → install deps (like chaiNNer)
+    setup: () => ipcRenderer.invoke("python:setup"),
     detect: () => ipcRenderer.invoke("python:detect"),
     checkDeps: () => ipcRenderer.invoke("python:checkDeps"),
     installDeps: () => ipcRenderer.invoke("python:installDeps"),
@@ -98,11 +100,25 @@ contextBridge.exposeInMainWorld("electronAPI", {
     aiModelStatus: () => ipcRenderer.invoke("python:aiModelStatus"),
     downloadAiModel: (type: string, name: string) => ipcRenderer.invoke("python:downloadAiModel", type, name),
     systemInfo: () => ipcRenderer.invoke("python:systemInfo"),
+    // Cleanup: remove integrated Python, pip packages, AI models
+    cleanup: () => ipcRenderer.invoke("python:cleanup"),
+    // Get info about installed packages & integrated Python size
+    installInfo: () => ipcRenderer.invoke("python:installInfo"),
     // Events
     onInstallProgress: (callback: (output: string) => void) => {
       const handler = (_e: unknown, data: string) => callback(data);
       ipcRenderer.on("python:installProgress", handler);
       return () => ipcRenderer.removeListener("python:installProgress", handler);
+    },
+    onSetupProgress: (callback: (data: { stage: string; percentage: number; message: string }) => void) => {
+      const handler = (_e: unknown, data: { stage: string; percentage: number; message: string }) => callback(data);
+      ipcRenderer.on("python:setupProgress", handler);
+      return () => ipcRenderer.removeListener("python:setupProgress", handler);
+    },
+    onInstallPackageProgress: (callback: (data: { installed: number; total: number; current: string; percentage: number }) => void) => {
+      const handler = (_e: unknown, data: { installed: number; total: number; current: string; percentage: number }) => callback(data);
+      ipcRenderer.on("python:installPackageProgress", handler);
+      return () => ipcRenderer.removeListener("python:installPackageProgress", handler);
     },
   },
 
