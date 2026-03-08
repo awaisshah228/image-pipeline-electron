@@ -4,6 +4,8 @@ A node-based visual image/video processing editor built with Electron, React, an
 
 ![Pipeline Editor](https://img.shields.io/badge/Electron-React-blue) ![Python Backend](https://img.shields.io/badge/Backend-Python%20Sanic-green) ![ML](https://img.shields.io/badge/ML-YOLOv8%20%7C%20OpenCV-orange)
 
+![Image Pipeline Desktop](assets/image.png)
+
 ## Architecture
 
 ```
