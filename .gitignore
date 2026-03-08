@@ -4,3 +4,7 @@ dist-electron/
 release/
 *.onnx
 .DS_Store
+*.pt
+*.pth
+__pycache__/
+python-backend/venv/
