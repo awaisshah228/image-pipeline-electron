@@ -106,6 +106,8 @@ interface ElectronAPI {
     loadModel(modelName: string): Promise<{ type: string; model: string; device: string }>;
     unloadModel(modelName: string): Promise<{ type: string }>;
     listModels(): Promise<{ models: string[]; device: string }>;
+    aiModelStatus(): Promise<AiModelStatusResult>;
+    downloadAiModel(type: string, name: string): Promise<{ type: string; model?: string; message?: string }>;
     systemInfo(): Promise<PythonSystemInfo>;
     // Events
     onInstallProgress(callback: (output: string) => void): () => void;
@@ -190,6 +192,12 @@ interface PythonSystemInfo {
     memory_allocated: number;
     memory_reserved: number;
   } | null;
+}
+
+interface AiModelStatusResult {
+  rembg: Record<string, { downloaded: boolean; size_mb?: number }>;
+  mobile_sam: { installed: boolean; downloaded: boolean; size_mb: number };
+  yolo: { loaded: string[] };
 }
 
 declare global {

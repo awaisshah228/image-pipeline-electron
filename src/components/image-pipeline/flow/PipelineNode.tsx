@@ -339,10 +339,7 @@ export const PipelineNodeComponent = memo(function PipelineNodeComponent({
 
       {/* Error banner */}
       {error && (
-        <div className="flex items-center gap-1.5 bg-destructive/10 px-3 py-1.5 text-[11px] text-destructive border-b border-destructive/20">
-          <AlertCircle className="h-3 w-3 shrink-0" />
-          <span className="truncate">{error}</span>
-        </div>
+        <ModelErrorBanner error={error} nodeId={id} />
       )}
 
       {/* Input fields */}
@@ -668,3 +665,54 @@ export const PipelineNodeComponent = memo(function PipelineNodeComponent({
     </div>
   );
 });
+
+/** Error banner with inline install button for model-related errors */
+function ModelErrorBanner({ error, nodeId }: { error: string; nodeId: string }) {
+  const [installing, setInstalling] = useState(false);
+  const setNodeError = usePipelineStore((s) => s.setNodeError);
+
+  const isModelError =
+    error.includes("MobileSAM is not installed") ||
+    error.includes("MobileSAM weights not found");
+
+  const handleInstall = useCallback(async () => {
+    setInstalling(true);
+    try {
+      await window.electronAPI.python.downloadAiModel("mobile_sam", "mobile_sam");
+      setNodeError(nodeId, undefined);
+    } catch (err) {
+      setNodeError(
+        nodeId,
+        err instanceof Error ? err.message : "Installation failed"
+      );
+    } finally {
+      setInstalling(false);
+    }
+  }, [nodeId, setNodeError]);
+
+  return (
+    <div className="flex items-center gap-1.5 bg-destructive/10 px-3 py-1.5 text-[11px] text-destructive border-b border-destructive/20">
+      <AlertCircle className="h-3 w-3 shrink-0" />
+      <span className="truncate flex-1">
+        {isModelError ? "MobileSAM is not installed." : error}
+      </span>
+      {isModelError && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            handleInstall();
+          }}
+          disabled={installing}
+          className="shrink-0 flex items-center gap-1 rounded bg-orange-500 px-2 py-0.5 text-[10px] font-medium text-white hover:bg-orange-600 transition-colors disabled:opacity-50"
+        >
+          {installing ? (
+            <Loader2 className="h-2.5 w-2.5 animate-spin" />
+          ) : (
+            <Download className="h-2.5 w-2.5" />
+          )}
+          {installing ? "Installing..." : "Install"}
+        </button>
+      )}
+    </div>
+  );
+}

@@ -126,12 +126,8 @@ export async function checkDependencies(
     const { stdout } = await execFileAsync(pythonPath, [
       "-c",
       `
-import sys, os, json
-
-# Suppress noisy library output (ultralytics prints warnings on import)
-_real_stderr = sys.stderr
-sys.stderr = open(os.devnull, "w")
-_real_stdout = sys.stdout
+import json
+from importlib.util import find_spec
 
 required = ["sanic", "numpy", "cv2", "PIL", "ultralytics", "psutil"]
 optional = ["rembg"]
@@ -139,26 +135,18 @@ installed = []
 missing = []
 
 for pkg in required:
-    try:
-        __import__(pkg)
+    if find_spec(pkg) is not None:
         installed.append(pkg)
-    except ImportError:
+    else:
         missing.append(pkg)
 
-# Optional packages — don't block setup if missing
 for pkg in optional:
-    try:
-        __import__(pkg)
+    if find_spec(pkg) is not None:
         installed.append(pkg)
-    except ImportError:
-        pass
 
-# Restore stdout before printing result
-sys.stderr = _real_stderr
-sys.stdout = _real_stdout
 print(json.dumps({"installed": installed, "missing": missing}))
 `,
-    ], { timeout: 60000 });
+    ], { timeout: 15000 });
 
     // Extract JSON from stdout — skip any non-JSON lines libraries may print
     const lines = stdout.trim().split("\n");

@@ -30,6 +30,7 @@ import { PipelineCanvas } from "@/components/image-pipeline/flow/PipelineCanvas"
 import { PipelineNodeSettingsPanel } from "@/components/image-pipeline/sidebar/PipelineNodeSettingsPanel";
 import { PipelineExportDialog } from "@/components/image-pipeline/PipelineExportDialog";
 import { PipelineRunDialog } from "@/components/image-pipeline/PipelineRunDialog";
+import { AiModelManagerDialog } from "@/components/image-pipeline/AiModelManagerDialog";
 import type { PipelineNode, PipelineEdge } from "@/lib/image-pipeline/types";
 import { PythonSetup } from "@/components/PythonSetup";
 import "./image-pipeline.css";
@@ -52,6 +53,7 @@ function App() {
   const [showPythonSetup, setShowPythonSetup] = useState(true);
   const [warningDismissed, setWarningDismissed] = useState(false);
   const [templateOpen, setTemplateOpen] = useState(false);
+  const [aiModelsOpen, setAiModelsOpen] = useState(false);
   const [gpuProviders, setGpuProviders] = useState<string[]>([]);
 
   useEffect(() => {
@@ -379,6 +381,14 @@ function App() {
             </div>
 
             <button
+              onClick={() => setAiModelsOpen(true)}
+              className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent transition-colors"
+            >
+              <Brain className="h-3.5 w-3.5" />
+              AI Models
+            </button>
+
+            <button
               onClick={handleImport}
               className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent transition-colors"
             >
@@ -448,6 +458,7 @@ function App() {
         {/* Dialogs */}
         <PipelineExportDialog open={exportOpen} onClose={() => setExportOpen(false)} />
         <PipelineRunDialog open={runOpen} onClose={() => setRunOpen(false)} />
+        <AiModelManagerDialog open={aiModelsOpen} onClose={() => setAiModelsOpen(false)} />
 
         {/* Python Backend Setup */}
         {showPythonSetup && (

@@ -557,7 +557,7 @@ def apply_cv_operation(img, operation, params):
             from mobile_sam import sam_model_registry, SamPredictor
         except ImportError:
             raise RuntimeError(
-                "MobileSAM is not installed. Please install it first from the AI Models manager."
+                "MobileSAM is not installed. Click Install or use the AI Models manager in the toolbar."
             )
 
         # Ensure MobileSAM predictor is cached
@@ -567,7 +567,7 @@ def apply_cv_operation(img, operation, params):
 
             if not ckpt_path.exists():
                 raise RuntimeError(
-                    "MobileSAM weights not found. Please download them from the AI Models manager."
+                    "MobileSAM weights not found. Click Install or use the AI Models manager in the toolbar."
                 )
 
             sam = sam_model_registry["vit_t"](checkpoint=str(ckpt_path))
