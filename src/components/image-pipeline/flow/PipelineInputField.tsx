@@ -259,78 +259,7 @@ function FieldWidget({
     }
 
     case "model_file": {
-      const modelVal = (value as string) ?? "";
-      // If value starts with "blob:" it's an uploaded file — show the filename stored after "::"
-      const isUploaded = modelVal.startsWith("blob:");
-      const modelDisplay = isUploaded
-        ? modelVal.split("::")[1] ?? "Uploaded model"
-        : modelVal;
-      const acceptModel = field.file_types?.join(",") ?? ".onnx";
-
-      return (
-        <div className="flex flex-col gap-1.5">
-          <input
-            type="text"
-            className={INPUT_CLASS}
-            value={isUploaded ? "" : modelVal}
-            placeholder={field.placeholder}
-            onChange={(e) => onChange(e.target.value)}
-          />
-          <label
-            className="nodrag flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-xs cursor-pointer transition-colors"
-            style={{
-              borderColor: isUploaded ? "hsl(24 95% 53% / 0.5)" : "var(--border)",
-              backgroundColor: isUploaded
-                ? "hsl(24 95% 53% / 0.08)"
-                : "color-mix(in srgb, var(--muted) 30%, transparent)",
-            }}
-          >
-            <svg
-              className="h-3.5 w-3.5 shrink-0"
-              style={{ color: isUploaded ? "hsl(24 95% 53%)" : "var(--muted-foreground)" }}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-              />
-            </svg>
-            <span className="text-muted-foreground truncate text-[11px]">
-              {isUploaded ? modelDisplay : "Upload .onnx model file"}
-            </span>
-            <input
-              type="file"
-              className="hidden"
-              accept={acceptModel}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  const blobUrl = URL.createObjectURL(file);
-                  onChange(`${blobUrl}::${file.name}`);
-                }
-                e.target.value = "";
-              }}
-            />
-          </label>
-          {isUploaded && (
-            <button
-              type="button"
-              className="text-[10px] text-muted-foreground hover:text-foreground self-end"
-              onClick={() => {
-                const blobUrl = modelVal.split("::")[0];
-                if (blobUrl.startsWith("blob:")) URL.revokeObjectURL(blobUrl);
-                onChange(field.value ?? "");
-              }}
-            >
-              Reset to default
-            </button>
-          )}
-        </div>
-      );
+      return <ModelFileWidget field={field} value={value} onChange={onChange} />;
     }
 
     case "tags":
@@ -354,6 +283,163 @@ function FieldWidget({
         />
       );
   }
+}
+
+function ModelFileWidget({
+  field,
+  value,
+  onChange,
+}: {
+  field: InputFieldType;
+  value: unknown;
+  onChange: (v: unknown) => void;
+}) {
+  const modelVal = (value as string) ?? "";
+  const [importing, setImporting] = useState(false);
+  const [models, setModels] = useState<string[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Check if value is a custom imported model (not default)
+  const defaultVal = (field.value as string) ?? "";
+  const isCustom = modelVal !== defaultVal && modelVal !== "";
+
+  // Load available models from the models directory
+  const refreshModels = useCallback(async () => {
+    if (!window.electronAPI?.models) return;
+    try {
+      const list = await window.electronAPI.models.list();
+      setModels(list.map((m) => m.name));
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    refreshModels();
+  }, [refreshModels]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // Import model from disk via native dialog
+  const handleImportModel = useCallback(async () => {
+    if (!window.electronAPI?.dialog || !window.electronAPI?.models) return;
+    setImporting(true);
+    try {
+      const result = await window.electronAPI.dialog.openFile({
+        title: "Import YOLO Model",
+        filters: [
+          { name: "YOLO Models", extensions: ["pt", "onnx", "torchscript", "engine"] },
+        ],
+      });
+      if (result.canceled || result.filePaths.length === 0) return;
+
+      const importedPath = await window.electronAPI.models.import(result.filePaths[0]);
+      const modelName = importedPath.split("/").pop() ?? importedPath;
+      onChange(modelName);
+      refreshModels();
+    } catch (err) {
+      console.error("Model import failed:", err);
+    } finally {
+      setImporting(false);
+    }
+  }, [onChange, refreshModels]);
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      {/* URL / model name input */}
+      <input
+        type="text"
+        className={INPUT_CLASS}
+        value={modelVal}
+        placeholder={field.placeholder ?? "Model name or URL..."}
+        onChange={(e) => onChange(e.target.value)}
+      />
+
+      {/* Available models dropdown + import button row */}
+      <div className="flex gap-1.5">
+        {/* Dropdown to pick from installed models */}
+        <div ref={dropdownRef} className="nodrag relative flex-1">
+          <button
+            type="button"
+            className="w-full flex items-center gap-2 rounded-md border border-dashed px-3 py-2 text-xs cursor-pointer transition-colors"
+            style={{
+              borderColor: "var(--border)",
+              backgroundColor: "color-mix(in srgb, var(--muted) 30%, transparent)",
+            }}
+            onClick={() => { refreshModels(); setShowDropdown(!showDropdown); }}
+          >
+            <svg className="h-3.5 w-3.5 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+            </svg>
+            <span className="text-muted-foreground truncate text-[11px]">
+              {models.length > 0 ? `${models.length} model${models.length !== 1 ? "s" : ""} available` : "No local models"}
+            </span>
+          </button>
+          {showDropdown && models.length > 0 && (
+            <div className="absolute z-50 mt-1 max-h-40 w-full overflow-auto rounded-md border border-border bg-popover shadow-lg">
+              {models.map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  className={`w-full px-3 py-1.5 text-left text-xs hover:bg-accent transition-colors truncate ${
+                    m === modelVal ? "text-orange-500 font-medium" : ""
+                  }`}
+                  onMouseDown={(e) => { e.preventDefault(); onChange(m); setShowDropdown(false); }}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Import from disk button */}
+        <button
+          type="button"
+          disabled={importing}
+          className="nodrag flex items-center gap-1.5 rounded-md border border-dashed px-3 py-2 text-xs cursor-pointer transition-colors shrink-0"
+          style={{
+            borderColor: "var(--border)",
+            backgroundColor: "color-mix(in srgb, var(--muted) 30%, transparent)",
+          }}
+          onClick={handleImportModel}
+        >
+          {importing ? (
+            <svg className="h-3.5 w-3.5 shrink-0 animate-spin text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10" strokeWidth={2} className="opacity-25" />
+              <path strokeLinecap="round" strokeWidth={2} d="M4 12a8 8 0 018-8" className="opacity-75" />
+            </svg>
+          ) : (
+            <svg className="h-3.5 w-3.5 shrink-0 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+          )}
+          <span className="text-muted-foreground text-[11px]">
+            {importing ? "Importing..." : "Import"}
+          </span>
+        </button>
+      </div>
+
+      {/* Reset to default */}
+      {isCustom && (
+        <button
+          type="button"
+          className="text-[10px] text-muted-foreground hover:text-foreground self-end"
+          onClick={() => onChange(defaultVal)}
+        >
+          Reset to default
+        </button>
+      )}
+    </div>
+  );
 }
 
 function TagsWidget({

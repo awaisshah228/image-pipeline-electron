@@ -22,10 +22,15 @@ async def yolo_detect(request: Request):
     iou = data.get("iou", 0.45)
     filter_classes = data.get("filter_classes", [])
 
-    # Normalize model name
+    # Normalize model name — strip paths, only convert known Ultralytics base
+    # models from .onnx → .pt (e.g. yolov8n.onnx → yolov8n.pt). Custom models
+    # like helmet_detector.onnx keep their original extension.
+    import re
     if model_name and not os.path.isfile(model_name):
         basename = os.path.basename(model_name)
-        if basename.endswith(".onnx"):
+        if basename.endswith(".onnx") and re.match(
+            r"^yolo(v?\d+[nslmx]?)\.onnx$", basename, re.IGNORECASE
+        ):
             basename = basename.replace(".onnx", ".pt")
         model_name = basename
     if not model_name:

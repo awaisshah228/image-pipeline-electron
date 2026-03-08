@@ -3,6 +3,22 @@
 
 const api = () => window.electronAPI?.python;
 
+/**
+ * Convert a blob: URL to a data: URL so the Python backend can decode it.
+ * Passes through strings that are already data URLs or base64.
+ */
+async function ensureDataUrl(url: string): Promise<string> {
+  if (!url.startsWith("blob:")) return url;
+  const resp = await fetch(url);
+  const blob = await resp.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 // ── Operation Routing ──
 
 // Operations handled by Python OpenCV
@@ -66,6 +82,9 @@ export async function processImage(
     throw new Error("Python backend not available. Start it from the setup screen.");
   }
 
+  // Convert blob URLs to data URLs for the Python backend
+  imageDataUrl = await ensureDataUrl(imageDataUrl);
+
   if (operation === "yolo_detect") {
     const model = normalizeModelName((params.model_url as string) ?? (params.model as string) ?? "yolov8n.pt");
     // Parse filter classes from class_names field (tags input → array of strings)
@@ -110,12 +129,21 @@ export async function processImage(
 }
 
 /**
- * Normalize YOLO model name: strip paths, convert .onnx → .pt
+ * Normalize YOLO model name: strip paths. Only convert .onnx → .pt for
+ * known Ultralytics model names (yolov5/v8/v11/yolo11 etc.) since those
+ * are typically distributed as .pt. Custom models keep their original extension.
  */
 function normalizeModelName(raw: string): string {
   let model = raw;
+  // Handle blob: URLs from web uploads (not applicable in Electron but just in case)
+  if (model.startsWith("blob:") && model.includes("::")) {
+    model = model.split("::")[1] ?? model;
+  }
   if (model.includes("/")) model = model.split("/").pop() ?? "yolov8n.pt";
-  if (model.endsWith(".onnx")) model = model.replace(/\.onnx$/, ".pt");
+  // Only convert known Ultralytics base models from .onnx → .pt
+  if (model.endsWith(".onnx") && /^yolo(v?\d+[nslmx]?)\.onnx$/i.test(model)) {
+    model = model.replace(/\.onnx$/, ".pt");
+  }
   return model || "yolov8n.pt";
 }
 
@@ -160,6 +188,9 @@ export async function processPipeline(
   const python = api();
   if (!python) throw new Error("Python backend not available.");
 
+  // Convert blob URLs to data URLs for the Python backend
+  imageDataUrl = await ensureDataUrl(imageDataUrl);
+
   const result = await python.request<{
     type: string; image: string; metadata: Record<string, unknown>;
   }>("POST", "/pipeline/process", { image: imageDataUrl, steps });
@@ -180,6 +211,9 @@ export async function submitFrameToQueue(
 ): Promise<{ queueSize: number }> {
   const python = api();
   if (!python) throw new Error("Python backend not available.");
+
+  // Convert blob URLs to data URLs for the Python backend
+  imageDataUrl = await ensureDataUrl(imageDataUrl);
 
   const result = await python.request<{ type: string; queue_size: number }>(
     "POST", "/queue/submit",

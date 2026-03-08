@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "WebSearch",
-      "Read(//Users/awaisshah228/**)"
+      "Read(//Users/awaisshah228/**)",
+      "Bash(git push origin main)",
+      "Bash(git push origin packaging/electron-forge)"
     ],
     "additionalDirectories": [
       "/Users/awaisshah228/Documents/coding/ai-diagram-generator/src/lib/workflow",
