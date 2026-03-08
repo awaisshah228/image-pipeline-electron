@@ -91,6 +91,8 @@ interface ElectronAPI {
   };
 
   python: {
+    // Full auto-setup: detect/download Python → install deps
+    setup(): Promise<{ python: PythonInfo; depsInstalled: boolean }>;
     detect(): Promise<PythonInfo | null>;
     checkDeps(): Promise<{ installed: string[]; missing: string[] }>;
     installDeps(): Promise<boolean>;
@@ -109,7 +111,11 @@ interface ElectronAPI {
     aiModelStatus(): Promise<AiModelStatusResult>;
     downloadAiModel(type: string, name: string): Promise<{ type: string; model?: string; message?: string }>;
     systemInfo(): Promise<PythonSystemInfo>;
+    // Cleanup / uninstall
+    cleanup(): Promise<{ removed: string[] }>;
+    installInfo(): Promise<{ python: PythonInfo | null; manifest: unknown; integratedPythonPath: string; integratedPythonSizeBytes: number }>;
     // Events
+    onSetupProgress(callback: (data: { stage: string; percentage: number; message: string }) => void): () => void;
     onInstallProgress(callback: (output: string) => void): () => void;
   };
 
