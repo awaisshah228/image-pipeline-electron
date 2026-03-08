@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "Read(//Users/awaisshah228/**)"
+    ],
+    "additionalDirectories": [
+      "/Users/awaisshah228/Documents/coding/ai-diagram-generator/src/lib/workflow",
+      "/Users/awaisshah228/Documents/coding/ai-diagram-generator/src/lib"
+    ]
+  }
+}
