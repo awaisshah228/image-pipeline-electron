@@ -539,7 +539,6 @@ def apply_cv_operation(img, operation, params):
 
     if operation == "segment_select":
         import os
-        import urllib.request
         from pathlib import Path
 
         points = params.get("points", [])
@@ -553,17 +552,23 @@ def apply_cv_operation(img, operation, params):
         if points and point_labels and len(points) != len(point_labels):
             raise ValueError("points and point_labels must have the same length")
 
+        # Check if MobileSAM package is installed
+        try:
+            from mobile_sam import sam_model_registry, SamPredictor
+        except ImportError:
+            raise RuntimeError(
+                "MobileSAM is not installed. Please install it first from the AI Models manager."
+            )
+
         # Ensure MobileSAM predictor is cached
         if "mobile_sam" not in _sam_cache:
-            from mobile_sam import sam_model_registry, SamPredictor
-
             ckpt_dir = Path.home() / ".mobile_sam"
-            ckpt_dir.mkdir(parents=True, exist_ok=True)
             ckpt_path = ckpt_dir / "mobile_sam.pt"
 
             if not ckpt_path.exists():
-                url = "https://github.com/ChaoningZhang/MobileSAM/raw/master/weights/mobile_sam.pt"
-                urllib.request.urlretrieve(url, str(ckpt_path))
+                raise RuntimeError(
+                    "MobileSAM weights not found. Please download them from the AI Models manager."
+                )
 
             sam = sam_model_registry["vit_t"](checkpoint=str(ckpt_path))
             sam.eval()

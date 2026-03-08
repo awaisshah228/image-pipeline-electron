@@ -77,10 +77,16 @@ async def ai_model_status(request: Request):
         else:
             rembg_status[name] = {"downloaded": False}
 
-    # MobileSAM
+    # MobileSAM — check both package install and weights
     sam_path = Path.home() / ".mobile_sam" / "mobile_sam.pt"
+    try:
+        import mobile_sam  # noqa: F401
+        sam_installed = True
+    except ImportError:
+        sam_installed = False
     sam_status = {
-        "downloaded": sam_path.exists(),
+        "installed": sam_installed,
+        "downloaded": sam_installed and sam_path.exists(),
         "size_mb": round(sam_path.stat().st_size / (1024 * 1024), 1) if sam_path.exists() else 0,
     }
 
@@ -113,9 +119,22 @@ async def download_ai_model(request: Request):
             return response.json({"type": "success", "model": model_name})
 
         elif model_type == "mobile_sam":
+            import subprocess
+            import sys
             import urllib.request
             from pathlib import Path
-            def _download():
+
+            def _install_and_download():
+                # 1. Install mobile-sam package if not already installed
+                try:
+                    import mobile_sam  # noqa: F401
+                except ImportError:
+                    subprocess.check_call([
+                        sys.executable, "-m", "pip", "install",
+                        "git+https://github.com/ChaoningZhang/MobileSAM.git",
+                    ])
+
+                # 2. Download weights if not present
                 ckpt_dir = Path.home() / ".mobile_sam"
                 ckpt_dir.mkdir(parents=True, exist_ok=True)
                 ckpt_path = ckpt_dir / "mobile_sam.pt"
@@ -124,7 +143,8 @@ async def download_ai_model(request: Request):
                         "https://github.com/ChaoningZhang/MobileSAM/raw/master/weights/mobile_sam.pt",
                         str(ckpt_path),
                     )
-            await asyncio.get_event_loop().run_in_executor(None, _download)
+
+            await asyncio.get_event_loop().run_in_executor(None, _install_and_download)
             return response.json({"type": "success", "model": "mobile_sam"})
 
         else:
