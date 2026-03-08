@@ -83,7 +83,23 @@ public/image-pipeline-nodes/
   *.json                  — Node definitions (inputs, outputs, types, defaults)
 ```
 
-## Setup
+## Quick Start (single command)
+
+```bash
+# macOS / Linux — installs everything and runs the app
+npm install && cd python-backend && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && cd .. && npm run electron:dev
+```
+
+```powershell
+# Windows
+npm install && cd python-backend && python -m venv venv && venv\Scripts\activate && pip install -r requirements.txt && cd .. && npm run electron:dev
+```
+
+> Requires Node.js 18+, Python 3.9+, and ffmpeg already installed.
+
+---
+
+## Setup (step by step)
 
 ### Prerequisites
 
