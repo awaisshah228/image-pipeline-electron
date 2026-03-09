@@ -85,19 +85,22 @@ public/image-pipeline-nodes/
   *.json                  — Node definitions (inputs, outputs, types, defaults)
 ```
 
-## Quick Start (single command)
+## Quick Start (automated)
+
+The easiest way to get started — the setup script checks all prerequisites, installs dependencies, and creates the Python virtual environment:
 
 ```bash
-# macOS / Linux — installs everything and runs the app
-npm install && cd python-backend && python -m venv venv && source venv/bin/activate && pip install -r requirements.txt && cd .. && npm run electron:dev
+# macOS / Linux
+chmod +x setup-dev.sh
+./setup-dev.sh
 ```
 
-```powershell
-# Windows
-npm install && cd python-backend && python -m venv venv && venv\Scripts\activate && pip install -r requirements.txt && cd .. && npm run electron:dev
+Then run the app:
+```bash
+npm run dev:full
 ```
 
-> Requires Node.js 18+, Python 3.9+, and ffmpeg already installed.
+> Requires **Node.js 18+**, **Python 3.8+**, and **ffmpeg** installed on your system.
 
 ---
 
@@ -105,13 +108,17 @@ npm install && cd python-backend && python -m venv venv && venv\Scripts\activate
 
 ### Prerequisites
 
-- **Node.js** 18+
-- **Python** 3.9+ (3.10+ recommended)
-- **ffmpeg** — Required for video encoding (combining frames into MP4/WebM)
+| Requirement | Minimum Version | Check |
+|-------------|----------------|-------|
+| **Node.js** | 18+ | `node -v` |
+| **npm** | 8+ | `npm -v` |
+| **Python** | 3.8+ (3.10 recommended) | `python3 --version` |
+| **pip** | Any | `python3 -m pip --version` |
+| **ffmpeg** | Any | `ffmpeg -version` |
 
 ### 0. Install ffmpeg
 
-ffmpeg is **not bundled** — you must install it separately:
+ffmpeg is **not bundled** — install it separately:
 
 ```bash
 # macOS
@@ -122,11 +129,6 @@ sudo apt install ffmpeg
 
 # Windows
 winget install ffmpeg
-```
-
-Verify it's installed:
-```bash
-ffmpeg -version
 ```
 
 > Without ffmpeg, the app falls back to the browser's MediaRecorder API (lower quality WebM only). For best results (H264 MP4, correct FPS), install ffmpeg.
@@ -143,12 +145,20 @@ npm install
 cd python-backend
 
 # Create virtual environment
-python -m venv venv
-source venv/bin/activate   # macOS/Linux
-# venv\Scripts\activate    # Windows
+python3 -m venv venv
+
+# Activate it
+source venv/bin/activate       # macOS / Linux
+# venv\Scripts\activate        # Windows
 
 # Install dependencies
+pip install --upgrade pip
 pip install -r requirements.txt
+```
+
+Verify key packages imported correctly:
+```bash
+python -c "import sanic, numpy, cv2, PIL, ultralytics, onnxruntime, psutil, rembg; print('All good')"
 ```
 
 > **GPU Support**: On Linux/Windows with NVIDIA GPU, `onnxruntime-gpu` is installed automatically. On macOS, it uses CPU-only `onnxruntime`. For YOLO GPU acceleration, ensure PyTorch with CUDA is installed (`pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118`).
@@ -156,29 +166,40 @@ pip install -r requirements.txt
 ### 3. Run in Development
 
 ```bash
-# Start Electron + Vite dev server
+# Option A: Full stack (backend + frontend + Electron)
+npm run dev:full
+
+# Option B: Frontend only (Vite dev server)
+npm run dev
+
+# Option C: Electron + Vite (no auto backend)
 npm run electron:dev
+
+# Option D: Backend only
+npm run backend:start
 ```
 
-This starts:
-- Vite dev server on `http://localhost:5173`
-- Electron window pointing to the dev server
-- Python backend auto-starts when you open the pipeline editor
+| Command | What it starts |
+|---------|---------------|
+| `npm run dev:full` | Python backend + Vite + Electron (recommended) |
+| `npm run dev` | Vite dev server only (`http://localhost:5173`) |
+| `npm run electron:dev` | Vite + Electron (backend auto-starts when pipeline editor opens) |
+| `npm run backend:start` | Python Sanic server only |
 
 ### 4. Build for Production
 
 ```bash
-# macOS
+# macOS (DMG — arm64 + x64)
 npm run electron:build:mac
 
-# Windows
+# Windows (NSIS installer)
 npm run electron:build:win
 
-# Linux
+# Linux (AppImage)
 npm run electron:build:linux
 ```
 
-Output goes to `release/` directory.
+Output goes to the `release/` directory.
 
 ## Node Types
 
@@ -204,4 +225,4 @@ Output goes to `release/` directory.
 
 ## License
 
-Private — All rights reserved.
+MIT License with Anti-Plagiarism Clause — see [LICENSE](LICENSE) for details.
