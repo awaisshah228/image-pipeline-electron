@@ -4,7 +4,10 @@
   "description": "Desktop Image Pipeline Editor with GPU-accelerated ML inference",
   "main": "dist-electron/main.js",
   "scripts": {
+    "setup": "bash setup-dev.sh",
     "dev": "vite",
+    "dev:full": "concurrently \"npm run backend:start\" \"vite\" \"wait-on http://localhost:5173 && electron .\"",
+    "backend:start": "python-backend/venv/bin/python python-backend/src/server.py",
     "build": "tsc && vite build && electron-builder",
     "build:vite": "tsc && vite build",
     "preview": "vite preview",
