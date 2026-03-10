@@ -381,7 +381,7 @@
         "type": "int",
         "required": true,
         "show": true,
-        "value": 2,
+        "value": 30,
         "info": "How many frames per second to capture and process. Lower = less CPU. Max 30."
       },
       {

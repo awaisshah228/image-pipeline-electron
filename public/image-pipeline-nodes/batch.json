@@ -144,7 +144,7 @@
         "type": "int",
         "required": false,
         "show": true,
-        "value": 0,
+        "value": 30,
         "info": "0 = original FPS"
       },
       {
