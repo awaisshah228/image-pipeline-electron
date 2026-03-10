@@ -446,7 +446,7 @@ export const PipelineNodeComponent = memo(function PipelineNodeComponent({
       )}
 
       {/* Preview image (for non-webcam nodes, or webcam stopped with last frame) */}
-      {!collapsed && previewUrl && !(isWebcamNode && processing) && (
+      {!collapsed && previewUrl && !(isWebcamNode && processing) && definition.type !== "image_gallery" && (
         <div className="p-2" style={{ borderTop: "1px solid color-mix(in srgb, var(--node-border) 40%, transparent)" }}>
           <img
             src={previewUrl}
