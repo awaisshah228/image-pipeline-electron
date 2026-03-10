@@ -1,7 +1,7 @@
 
 import { memo, useCallback, useState, useRef, useEffect } from "react";
 import { Position } from "@xyflow/react";
-import { Info, X } from "lucide-react";
+import { Info, X, FolderOpen } from "lucide-react";
 import type { PipelineInputField as InputFieldType } from "@/lib/image-pipeline/types";
 import { PipelineHandle } from "./PipelineHandle";
 import { encodeHandleId } from "@/lib/image-pipeline/utils";
@@ -100,6 +100,36 @@ function FieldWidget({
   value: unknown;
   onChange: (v: unknown) => void;
 }) {
+  // Detect directory fields by type or name (handles old nodes with "str" type too)
+  const isDirectoryField = field.type === "directory" ||
+    field.name === "directory" || field.name === "output_dir" ||
+    field.name.includes("directory") || field.name.includes("output_dir");
+
+  if (isDirectoryField) {
+    return (
+      <div className="flex gap-1.5">
+        <input
+          type="text"
+          className={`${INPUT_CLASS} flex-1`}
+          value={(value as string) ?? ""}
+          placeholder={field.placeholder ?? "Browse or paste path (default: ~/Downloads/ImagePipeline)"}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        <button
+          type="button"
+          className="nodrag shrink-0 flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs cursor-pointer transition-colors hover:bg-accent"
+          style={{ backgroundColor: "color-mix(in srgb, var(--muted) 30%, transparent)" }}
+          onClick={async () => {
+            const dir = await window.electronAPI?.dialog.openDirectory();
+            if (dir) onChange(dir);
+          }}
+        >
+          <FolderOpen className="h-3.5 w-3.5 text-muted-foreground" />
+        </button>
+      </div>
+    );
+  }
+
   switch (field.type) {
     case "str":
       if (field.multiline) {

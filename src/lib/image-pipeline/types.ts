@@ -17,6 +17,7 @@ export type PipelineFieldType =
   | "bool"
   | "dropdown"
   | "file"
+  | "directory"
   | "password"
   | "tags"
   | "model_file";

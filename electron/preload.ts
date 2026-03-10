@@ -147,4 +147,10 @@ contextBridge.exposeInMainWorld("electronAPI", {
     getPath: (name: string) => ipcRenderer.invoke("app:getPath", name),
     getResourcesPath: () => ipcRenderer.invoke("app:getResourcesPath"),
   },
+
+  // ── Shell ──
+  shell: {
+    openPath: (path: string) => ipcRenderer.invoke("shell:openPath", path),
+    showItemInFolder: (path: string) => ipcRenderer.send("shell:showItemInFolder", path),
+  },
 });

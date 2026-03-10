@@ -82,6 +82,10 @@ function registerIpcHandlers() {
     return app.isPackaged ? process.resourcesPath : path.join(__dirname, "../public");
   });
 
+  // Shell helpers
+  ipcMain.handle("shell:openPath", (_e, p: string) => shell.openPath(p));
+  ipcMain.on("shell:showItemInFolder", (_e, p: string) => shell.showItemInFolder(p));
+
   // Dialog helpers
   ipcMain.handle("dialog:openFile", async (_e, options: Electron.OpenDialogOptions) => {
     const result = await dialog.showOpenDialog(mainWindow!, options);

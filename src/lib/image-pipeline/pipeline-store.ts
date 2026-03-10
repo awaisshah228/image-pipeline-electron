@@ -25,8 +25,6 @@ import {
   processImage,
   getOperationForNodeType,
   isPassthroughNode,
-  saveFramesToDisk,
-  saveBlobToDisk,
   buildPipelineStep,
   processPipeline,
 } from "./native-processor";
@@ -35,7 +33,6 @@ import {
   stopWebcamCapture,
   isCapturing,
   getTotalFramesCaptured,
-  getTotalFramesProcessed,
   setTotalFramesProcessed,
 } from "./webcam-processor";
 import {
@@ -218,18 +215,34 @@ async function processBatchNodeChain(
       const prefix = (node.data.fieldValues.prefix as string) ?? "frame_";
       const format = ((node.data.fieldValues.format as string) ?? "PNG").toLowerCase();
       const ext = format === "jpeg" ? "jpg" : format;
-      const savedPath = await saveFramesToDisk(frames, prefix, ext, (cur, tot) => {
+      const dirField = (node.data.fieldValues.directory as string) ?? "";
+
+      // Use directory field if set, otherwise default to ~/Downloads/ImagePipeline/
+      let dirPath: string;
+      if (dirField.trim()) {
+        dirPath = dirField.trim();
+      } else {
+        const defaultDir = `${await window.electronAPI.app.getPath("downloads")}/ImagePipeline`;
+        dirPath = defaultDir;
+      }
+      try { await window.electronAPI?.fs.mkdir(dirPath); } catch { /* may already exist */ }
+
+      for (let i = 0; i < frames.length; i++) {
+        const filename = `${prefix}${String(i).padStart(4, "0")}.${ext}`;
+        const filePath = `${dirPath}/${filename}`;
+        await window.electronAPI.fs.writeDataUrl(filePath, frames[i]);
         set({
           nodes: updateNode(get().nodes, nodeId, () => ({
-            outputData: { progress: `Saving ${cur}/${tot}` },
+            outputData: { progress: `Saving ${i + 1}/${frames.length}` },
           })),
         });
-      });
+      }
+
       set({
         nodes: updateNode(get().nodes, nodeId, () => ({
           processing: false,
           previewUrl: frames[0],
-          outputData: { count: frames.length, saved: !!savedPath, progress: savedPath ? `Saved to ${savedPath}` : "Cancelled" },
+          outputData: { images: frames, count: frames.length, saved: true, progress: `Saved to ${dirPath}` },
         })),
       });
     } catch (err) {
@@ -284,6 +297,134 @@ async function processBatchNodeChain(
         nodes: updateNode(get().nodes, nodeId, () => ({
           processing: false,
           error: err instanceof Error ? err.message : "Batch processing failed",
+        })),
+      });
+    }
+    return;
+  }
+
+  // Terminal: video_save — auto-encode when frames arrive via batch chain
+  if (nodeType === "video_save") {
+    const fps = Number(node.data.fieldValues.fps ?? 30);
+    const filename = (node.data.fieldValues.filename as string) ?? "output";
+    const outputDirField = (node.data.fieldValues.output_dir as string) ?? "";
+    const codecField = (node.data.fieldValues.codec as string) ?? "H264";
+
+    set({
+      nodes: updateNode(get().nodes, nodeId, () => ({
+        processing: true,
+        previewUrl: frames[0],
+        outputData: { images: frames, count: frames.length, progress: `Writing ${frames.length} frames to disk...` },
+      })),
+    });
+
+    try {
+      // Write frames to temp dir for ffmpeg
+      const appData = await window.electronAPI.app.getPath("userData");
+      const tempDir = `${appData}/pipeline_frames/video_save_${nodeId}_${Date.now()}`;
+      await window.electronAPI.fs.mkdir(tempDir);
+
+      for (let i = 0; i < frames.length; i++) {
+        const framePath = `${tempDir}/frame_${String(i + 1).padStart(5, "0")}.jpg`;
+        await window.electronAPI.fs.writeDataUrl(framePath, frames[i]);
+        if ((i + 1) % 10 === 0 || i === frames.length - 1) {
+          set({
+            nodes: updateNode(get().nodes, nodeId, () => ({
+              outputData: { images: frames, count: frames.length, progress: `Writing frames ${i + 1}/${frames.length}` },
+            })),
+          });
+        }
+      }
+
+      // Determine output path — use output_dir, or default to ~/Downloads/ImagePipeline/
+      let outputPath: string;
+      if (outputDirField.trim()) {
+        const ext = codecField === "H264" ? "mp4" : "webm";
+        outputPath = `${outputDirField.trim().replace(/\/$/, "")}/${filename}.${ext}`;
+        try { await window.electronAPI.fs.mkdir(outputDirField.trim()); } catch { /* exists */ }
+      } else {
+        const defaultDir = `${await window.electronAPI.app.getPath("downloads")}/ImagePipeline`;
+        await window.electronAPI.fs.mkdir(defaultDir);
+        const ext = codecField === "H264" ? "mp4" : "webm";
+        outputPath = `${defaultDir}/${filename}_${Date.now()}.${ext}`;
+      }
+
+      const codec = outputPath.endsWith(".webm") ? "libvpx-vp9" : "libx264";
+      let encoded = false;
+
+      set({
+        nodes: updateNode(get().nodes, nodeId, () => ({
+          outputData: { images: frames, count: frames.length, progress: `Encoding ${frames.length} frames at ${fps} FPS...` },
+        })),
+      });
+
+      // Strategy 1: Node.js ffmpeg
+      if (window.electronAPI?.ffmpeg) {
+        try {
+          const hasFfmpeg = await window.electronAPI.ffmpeg.available();
+          if (hasFfmpeg) {
+            const result = await window.electronAPI.ffmpeg.encode({
+              framesDir: tempDir, outputPath, fps, codec, pattern: "frame_%05d.jpg",
+            });
+            if (result.success) {
+              encoded = true;
+              const sizeMB = result.size ? (result.size / (1024 * 1024)).toFixed(1) : "?";
+              set({
+                nodes: updateNode(get().nodes, nodeId, () => ({
+                  processing: false,
+                  outputData: { images: frames, count: frames.length, path: outputPath, progress: `Saved: ${outputPath} (${sizeMB} MB)`, saved: true },
+                })),
+              });
+            }
+          }
+        } catch { /* fall through */ }
+      }
+
+      // Strategy 2: Python ffmpeg
+      if (!encoded && window.electronAPI?.python) {
+        try {
+          const result = await window.electronAPI.python.request<{ type: string; path: string; size: number }>(
+            "POST", "/video/encode", { frames_dir: tempDir, output_path: outputPath, fps, codec, pattern: "frame_%05d.jpg" }
+          );
+          if (result.type === "success") {
+            encoded = true;
+            const sizeMB = result.size ? (result.size / (1024 * 1024)).toFixed(1) : "?";
+            set({
+              nodes: updateNode(get().nodes, nodeId, () => ({
+                processing: false,
+                outputData: { images: frames, count: frames.length, path: outputPath, progress: `Saved: ${outputPath} (${sizeMB} MB)`, saved: true },
+              })),
+            });
+          }
+        } catch { /* fall through */ }
+      }
+
+      // Strategy 3: Browser fallback
+      if (!encoded) {
+        const blob = await encodeFramesToVideo(frames, fps);
+        const webmPath = outputPath.replace(/\.[^.]+$/, ".webm");
+        const buffer = new Uint8Array(await blob.arrayBuffer());
+        await window.electronAPI.fs.writeBuffer(webmPath, buffer);
+        set({
+          nodes: updateNode(get().nodes, nodeId, () => ({
+            processing: false,
+            outputData: { images: frames, count: frames.length, path: webmPath, progress: `Saved: ${webmPath}`, saved: true },
+          })),
+        });
+      }
+
+      // Clean up temp frames
+      try {
+        for (let i = 1; i <= frames.length; i++) {
+          await window.electronAPI.fs.deleteFile(`${tempDir}/frame_${String(i).padStart(5, "0")}.jpg`);
+        }
+      } catch { /* ignore */ }
+
+    } catch (err) {
+      set({
+        nodes: updateNode(get().nodes, nodeId, () => ({
+          processing: false,
+          error: err instanceof Error ? err.message : "Video encoding failed",
         })),
       });
     }
@@ -532,30 +673,16 @@ async function finalizeDownstreamEncoders(
     try {
       let outputPath: string;
 
-      // Auto-save if output_dir is set, otherwise show dialog
+      // Auto-save: use output_dir if set, otherwise default to ~/Downloads/ImagePipeline/
       if (outputDirField.trim()) {
         const ext = codecField === "H264" ? "mp4" : "webm";
         outputPath = `${outputDirField.replace(/\/$/, "")}/${filename}.${ext}`;
+        try { await window.electronAPI.fs.mkdir(outputDirField.trim()); } catch { /* exists */ }
       } else {
+        const defaultDir = `${await window.electronAPI.app.getPath("downloads")}/ImagePipeline`;
+        await window.electronAPI.fs.mkdir(defaultDir);
         const ext = codecField === "H264" ? "mp4" : "webm";
-        const saveResult = await window.electronAPI.dialog.saveFile({
-          defaultPath: `${filename}.${ext}`,
-          filters: [
-            { name: "MP4 Video", extensions: ["mp4"] },
-            { name: "WebM Video", extensions: ["webm"] },
-          ],
-        });
-
-        if (saveResult.canceled || !saveResult.filePath) {
-          set({
-            nodes: updateNode(get().nodes, saveNodeId, () => ({
-              processing: false,
-              outputData: { progress: "Cancelled", frames: entry.count },
-            })),
-          });
-          continue;
-        }
-        outputPath = saveResult.filePath;
+        outputPath = `${defaultDir}/${filename}_${Date.now()}.${ext}`;
       }
 
       const codec = outputPath.endsWith(".webm") ? "libvpx-vp9" : "libx264";
@@ -1282,42 +1409,148 @@ export const usePipelineStore = create<PipelineState>()(persist((set, get) => ({
       return;
     }
 
-    // ── Video Save: encode frames to video ──
+    // ── Video Save: encode frames to video via ffmpeg ──
     if (nodeType === "video_save") {
       const frames = (node.data.outputData?.images ?? node.data.outputData?.frames) as string[] | undefined;
       if (!frames?.length) return;
 
       const fps = Number(node.data.fieldValues.fps ?? 30);
       const filename = (node.data.fieldValues.filename as string) ?? "output";
+      const outputDirField = (node.data.fieldValues.output_dir as string) ?? "";
+      const codecField = (node.data.fieldValues.codec as string) ?? "H264";
 
       set({ nodes: updateNode(get().nodes, nodeId, () => ({ processing: true, error: undefined })) });
 
-      encodeFramesToVideo(frames, fps, (cur, tot) => {
+      try {
+        // 1. Write frames to a temp directory for ffmpeg
+        const appData = await window.electronAPI.app.getPath("userData");
+        const tempDir = `${appData}/pipeline_frames/video_save_${nodeId}_${Date.now()}`;
+        await window.electronAPI.fs.mkdir(tempDir);
+
         set({
           nodes: updateNode(get().nodes, nodeId, () => ({
-            outputData: { ...node.data.outputData, progress: `Encoding ${cur}/${tot}` },
+            outputData: { ...node.data.outputData, progress: `Writing ${frames.length} frames to disk...` },
           })),
         });
-      })
-        .then(async (blob) => {
-          const saved = await saveBlobToDisk(blob, `${filename}.webm`, [
-            { name: "WebM Video", extensions: ["webm"] },
-          ]);
-          set({
-            nodes: updateNode(get().nodes, nodeId, () => ({
-              processing: false,
-              outputData: { ...node.data.outputData, progress: saved ? `Saved: ${saved}` : "Cancelled" },
-            })),
+
+        for (let i = 0; i < frames.length; i++) {
+          const framePath = `${tempDir}/frame_${String(i + 1).padStart(5, "0")}.jpg`;
+          await window.electronAPI.fs.writeDataUrl(framePath, frames[i]);
+        }
+
+        // 2. Determine output path
+        let outputPath: string;
+        if (outputDirField.trim()) {
+          const ext = codecField === "H264" ? "mp4" : "webm";
+          outputPath = `${outputDirField.trim().replace(/\/$/, "")}/${filename}.${ext}`;
+        } else {
+          const ext = codecField === "H264" ? "mp4" : "webm";
+          const saveResult = await window.electronAPI.dialog.saveFile({
+            defaultPath: `${filename}.${ext}`,
+            filters: [
+              { name: "MP4 Video", extensions: ["mp4"] },
+              { name: "WebM Video", extensions: ["webm"] },
+            ],
           });
-        })
-        .catch((err) => {
-          set({
-            nodes: updateNode(get().nodes, nodeId, () => ({
-              processing: false,
-              error: err instanceof Error ? err.message : "Video encoding failed",
-            })),
-          });
+          if (saveResult.canceled || !saveResult.filePath) {
+            set({
+              nodes: updateNode(get().nodes, nodeId, () => ({
+                processing: false,
+                outputData: { ...node.data.outputData, progress: "Cancelled" },
+              })),
+            });
+            return;
+          }
+          outputPath = saveResult.filePath;
+        }
+
+        const codec = outputPath.endsWith(".webm") ? "libvpx-vp9" : "libx264";
+        let encoded = false;
+
+        set({
+          nodes: updateNode(get().nodes, nodeId, () => ({
+            outputData: { ...node.data.outputData, progress: `Encoding ${frames.length} frames...` },
+          })),
         });
+
+        // Strategy 1: Node.js ffmpeg
+        if (window.electronAPI?.ffmpeg) {
+          try {
+            const hasFfmpeg = await window.electronAPI.ffmpeg.available();
+            if (hasFfmpeg) {
+              const result = await window.electronAPI.ffmpeg.encode({
+                framesDir: tempDir,
+                outputPath,
+                fps,
+                codec,
+                pattern: "frame_%05d.jpg",
+              });
+              if (result.success) {
+                encoded = true;
+                const sizeMB = result.size ? (result.size / (1024 * 1024)).toFixed(1) : "?";
+                set({
+                  nodes: updateNode(get().nodes, nodeId, () => ({
+                    processing: false,
+                    outputData: { ...node.data.outputData, path: outputPath, progress: `Saved: ${outputPath} (${sizeMB} MB)`, saved: true },
+                  })),
+                });
+              }
+            }
+          } catch { /* fall through */ }
+        }
+
+        // Strategy 2: ffmpeg via Python backend
+        if (!encoded && window.electronAPI?.python) {
+          try {
+            const result = await window.electronAPI.python.request<{ type: string; path: string; size: number }>(
+              "POST", "/video/encode", {
+                frames_dir: tempDir,
+                output_path: outputPath,
+                fps,
+                codec,
+                pattern: "frame_%05d.jpg",
+              }
+            );
+            if (result.type === "success") {
+              encoded = true;
+              const sizeMB = result.size ? (result.size / (1024 * 1024)).toFixed(1) : "?";
+              set({
+                nodes: updateNode(get().nodes, nodeId, () => ({
+                  processing: false,
+                  outputData: { ...node.data.outputData, path: outputPath, progress: `Saved: ${outputPath} (${sizeMB} MB)`, saved: true },
+                })),
+              });
+            }
+          } catch { /* fall through */ }
+        }
+
+        // Strategy 3: Browser fallback (WebM only)
+        if (!encoded) {
+          const blob = await encodeFramesToVideo(frames, fps, (cur, tot) => {
+            set({
+              nodes: updateNode(get().nodes, nodeId, () => ({
+                outputData: { ...node.data.outputData, progress: `Encoding ${cur}/${tot}` },
+              })),
+            });
+          });
+          const webmPath = outputPath.replace(/\.[^.]+$/, ".webm");
+          const buffer = new Uint8Array(await blob.arrayBuffer());
+          await window.electronAPI.fs.writeBuffer(webmPath, buffer);
+          set({
+            nodes: updateNode(get().nodes, nodeId, () => ({
+              processing: false,
+              outputData: { ...node.data.outputData, path: webmPath, progress: `Saved: ${webmPath}`, saved: true },
+            })),
+          });
+        }
+      } catch (err) {
+        set({
+          nodes: updateNode(get().nodes, nodeId, () => ({
+            processing: false,
+            error: err instanceof Error ? err.message : "Video encoding failed",
+          })),
+        });
+      }
       return;
     }
 

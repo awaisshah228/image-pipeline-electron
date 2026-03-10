@@ -56,10 +56,10 @@
       {
         "name": "directory",
         "display_name": "Output Directory",
-        "type": "str",
-        "required": true,
+        "type": "directory",
+        "required": false,
         "show": true,
-        "placeholder": "/path/to/output"
+        "placeholder": "Browse or paste path (default: ~/Downloads/ImagePipeline)"
       },
       {
         "name": "prefix",
@@ -228,11 +228,11 @@
       {
         "name": "output_dir",
         "display_name": "Output Directory",
-        "type": "str",
+        "type": "directory",
         "required": false,
         "show": true,
-        "placeholder": "Click browse or paste path",
-        "info": "Auto-saves here when capture stops. Leave empty to choose each time."
+        "placeholder": "Browse or paste path (default: ~/Downloads/ImagePipeline)",
+        "info": "Auto-saves here when capture stops. Leave empty for ~/Downloads/ImagePipeline."
       }
     ],
     "outputs": []

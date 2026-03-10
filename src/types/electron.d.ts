@@ -143,6 +143,11 @@ interface ElectronAPI {
     getPath(name: string): Promise<string>;
     getResourcesPath(): Promise<string>;
   };
+
+  shell: {
+    openPath(path: string): Promise<string>;
+    showItemInFolder(path: string): void;
+  };
 }
 
 interface PythonInfo {

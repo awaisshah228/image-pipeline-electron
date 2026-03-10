@@ -46,7 +46,49 @@ NPM_VERSION=$(npm -v)
 ok "npm v$NPM_VERSION"
 
 # -----------------------------------
-# 3. Find Python 3.8+
+# 3. Check / Install ffmpeg
+# -----------------------------------
+log "Checking ffmpeg..."
+if command -v ffmpeg &>/dev/null; then
+  FFMPEG_VERSION=$(ffmpeg -version 2>&1 | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)
+  ok "ffmpeg v$FFMPEG_VERSION"
+else
+  warn "ffmpeg not found — attempting to install..."
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    if command -v brew &>/dev/null; then
+      log "Installing ffmpeg via Homebrew..."
+      brew install ffmpeg
+      ok "ffmpeg installed via Homebrew"
+    else
+      warn "Homebrew not found. Install ffmpeg manually: brew install ffmpeg"
+    fi
+  elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    if command -v apt &>/dev/null; then
+      log "Installing ffmpeg via apt..."
+      sudo apt update && sudo apt install -y ffmpeg
+      ok "ffmpeg installed via apt"
+    elif command -v dnf &>/dev/null; then
+      log "Installing ffmpeg via dnf..."
+      sudo dnf install -y ffmpeg
+      ok "ffmpeg installed via dnf"
+    else
+      warn "Could not auto-install ffmpeg. Install it manually for your distro."
+    fi
+  else
+    warn "Please install ffmpeg manually: https://ffmpeg.org/download.html"
+  fi
+
+  # Verify
+  if command -v ffmpeg &>/dev/null; then
+    FFMPEG_VERSION=$(ffmpeg -version 2>&1 | head -1 | grep -oE '[0-9]+\.[0-9]+(\.[0-9]+)?' | head -1)
+    ok "ffmpeg v$FFMPEG_VERSION"
+  else
+    warn "ffmpeg not installed — video encoding will fall back to browser (WebM only)"
+  fi
+fi
+
+# -----------------------------------
+# 4. Find Python 3.8+
 # -----------------------------------
 log "Checking Python..."
 PYTHON_CMD=""
@@ -91,7 +133,7 @@ fi
 ok "venv module available"
 
 # -----------------------------------
-# 4. Install Node dependencies
+# 5. Install Node dependencies
 # -----------------------------------
 log "Installing Node.js dependencies..."
 cd "$SCRIPT_DIR"
@@ -99,7 +141,7 @@ npm install
 ok "Node.js dependencies installed"
 
 # -----------------------------------
-# 5. Setup Python virtual environment
+# 6. Setup Python virtual environment
 # -----------------------------------
 if [ ! -d "$VENV_DIR" ]; then
   log "Creating Python virtual environment..."
@@ -119,7 +161,7 @@ else
 fi
 
 # -----------------------------------
-# 6. Install Python dependencies
+# 7. Install Python dependencies
 # -----------------------------------
 log "Upgrading pip in venv..."
 pip install --upgrade pip --quiet
@@ -129,7 +171,7 @@ pip install -r "$BACKEND_DIR/requirements.txt"
 ok "Python dependencies installed"
 
 # -----------------------------------
-# 7. Verify key Python packages
+# 8. Verify key Python packages
 # -----------------------------------
 log "Verifying Python packages..."
 MISSING=0
@@ -147,7 +189,7 @@ if [ "$MISSING" -gt 0 ]; then
 fi
 
 # -----------------------------------
-# 8. Summary
+# 9. Summary
 # -----------------------------------
 echo ""
 echo -e "${GREEN}========================================${NC}"

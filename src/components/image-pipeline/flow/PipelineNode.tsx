@@ -494,8 +494,26 @@ export const PipelineNodeComponent = memo(function PipelineNodeComponent({
           })()}
           {/* Saved status */}
           {!processing && !!outputData?.saved && typeof outputData?.progress === "string" && (
-            <div className="mt-1 text-center text-[10px] font-medium text-green-600">
-              {outputData.progress as string}
+            <div className="mt-1 text-center">
+              <div className="text-[10px] font-medium text-green-600">
+                {outputData.progress as string}
+              </div>
+              {(definition.type === "video_save" || definition.type === "batch_save") && (
+                <button
+                  className="mt-1 px-2 py-0.5 text-[10px] rounded bg-muted hover:bg-muted/80 text-muted-foreground transition-colors cursor-pointer"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const savedPath = (outputData.path as string) ?? (outputData.progress as string);
+                    // Extract directory from file path or use the saved path directly
+                    const dir = savedPath.includes("Saved to ")
+                      ? savedPath.replace("Saved to ", "")
+                      : savedPath.replace(/\/[^/]+$/, "").replace(/^Saved:\s*/, "");
+                    window.electronAPI?.shell?.openPath?.(dir);
+                  }}
+                >
+                  Open Output Folder
+                </button>
+              )}
             </div>
           )}
         </div>

@@ -19,6 +19,7 @@ import {
   Zap,
   HardDrive,
   Cpu,
+  FolderOpen,
 } from "lucide-react";
 import { ReactFlowProvider } from "@xyflow/react";
 import { usePipelineStore } from "@/lib/image-pipeline/pipeline-store";
@@ -57,18 +58,31 @@ function App() {
   const [templateOpen, setTemplateOpen] = useState(false);
   const [aiModelsOpen, setAiModelsOpen] = useState(false);
   const [gpuProviders, setGpuProviders] = useState<string[]>([]);
+  const [ffmpegAvailable, setFfmpegAvailable] = useState<boolean | null>(null);
 
   useEffect(() => {
     loadDefinitions();
   }, [loadDefinitions]);
 
-  // Always start dark; detect GPU providers; clean up workers on unmount
+  // Always start dark; detect GPU providers & ffmpeg; clean up workers on unmount
   useEffect(() => {
     document.documentElement.classList.add("dark");
 
     // Detect available GPU providers
     if (window.electronAPI?.gpu) {
       window.electronAPI.gpu.getProviders().then(setGpuProviders).catch(() => {});
+    }
+
+    // Check ffmpeg availability
+    if (window.electronAPI?.ffmpeg) {
+      window.electronAPI.ffmpeg.available().then(setFfmpegAvailable).catch(() => setFfmpegAvailable(false));
+    }
+
+    // Create default output directory on startup
+    if (window.electronAPI?.app && window.electronAPI?.fs) {
+      window.electronAPI.app.getPath("downloads").then((dl) => {
+        window.electronAPI.fs.mkdir(`${dl}/ImagePipeline`).catch(() => {});
+      }).catch(() => {});
     }
 
     return () => {
@@ -422,6 +436,18 @@ function App() {
             </button>
 
             <button
+              onClick={async () => {
+                const dl = await window.electronAPI?.app.getPath("downloads");
+                if (dl) window.electronAPI?.shell?.openPath(`${dl}/ImagePipeline`);
+              }}
+              className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-accent transition-colors"
+              title="Open default output folder (~/Downloads/ImagePipeline)"
+            >
+              <FolderOpen className="h-3.5 w-3.5" />
+              Output
+            </button>
+
+            <button
               onClick={() => {
                 if (nodes.length === 0 || window.confirm("Clear all nodes and connections?")) {
                   clearPipeline();
@@ -446,9 +472,34 @@ function App() {
               Native file system access, GPU-accelerated inference ({gpuProviders.join(", ")}), and local model management.
               Drag nodes from the sidebar to build processing chains.
             </p>
-            <button onClick={() => setWarningDismissed(true)} className="rounded p-0.5 hover:bg-accent shrink-0">
-              <X className="h-3.5 w-3.5 text-muted-foreground" />
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              {ffmpegAvailable === false && (
+                <span className="flex items-center gap-1 rounded-md bg-yellow-500/10 border border-yellow-500/30 px-2 py-0.5 text-[10px] text-yellow-500 font-medium">
+                  <AlertTriangle className="h-3 w-3" />
+                  ffmpeg not found
+                </span>
+              )}
+              {ffmpegAvailable === true && (
+                <span className="flex items-center gap-1 rounded-md bg-green-500/10 border border-green-500/30 px-2 py-0.5 text-[10px] text-green-500 font-medium">
+                  <Check className="h-3 w-3" />
+                  ffmpeg
+                </span>
+              )}
+              <button onClick={() => setWarningDismissed(true)} className="rounded p-0.5 hover:bg-accent">
+                <X className="h-3.5 w-3.5 text-muted-foreground" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ffmpeg warning banner (always visible when ffmpeg missing) */}
+        {warningDismissed && ffmpegAvailable === false && (
+          <div className="flex items-center gap-2 border-b border-yellow-500/20 bg-yellow-500/5 px-4 py-1.5 shrink-0">
+            <AlertTriangle className="h-3.5 w-3.5 text-yellow-500 shrink-0" />
+            <p className="flex-1 text-[11px] text-yellow-600">
+              <span className="font-medium">ffmpeg not installed.</span>{" "}
+              Video encoding will fall back to browser (WebM only, lower quality). Install ffmpeg for H264 MP4 support.
+            </p>
           </div>
         )}
 
