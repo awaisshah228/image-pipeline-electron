@@ -1315,32 +1315,105 @@ export const usePipelineStore = create<PipelineState>()(persist((set, get) => ({
       return;
     }
 
-    // ── Video Load: extract frames ──
+    // ── Video Load: extract frames (ffmpeg-first, browser fallback) ──
     if (nodeType === "video_load") {
       const fileField = node.data.fieldValues.file as string;
       if (!fileField) return;
 
-      const videoSrc = fileField.includes("data:") ? fileField.split("::").slice(1).join("::") : fileField;
-      const fps = Number(node.data.fieldValues.fps ?? 1) || 1;
-      const maxFrames = Number(node.data.fieldValues.max_frames ?? 30) || 30;
+      const fps = Number(node.data.fieldValues.fps ?? 30) || 30;
+      const maxFrames = Number(node.data.fieldValues.max_frames ?? 0);
       const maxRes = Number(node.data.fieldValues.max_resolution ?? 0) || 0;
 
       set({ nodes: updateNode(get().nodes, nodeId, () => ({ processing: true, error: undefined })) });
 
-      extractVideoFrames(videoSrc, fps, maxFrames, "image/jpeg", 0.85, maxRes, (blobUrl, idx, total) => {
+      // Try ffmpeg extraction first (accurate, extracts ALL frames)
+      const tryFfmpegExtract = async (): Promise<string[] | null> => {
+        const ffmpeg = window.electronAPI?.ffmpeg;
+        if (!ffmpeg) return null;
+
+        const available = await ffmpeg.available().catch(() => false);
+        if (!available) return null;
+
+        // Determine video file path on disk
+        let videoPath: string;
+        const isDataUrl = fileField.includes("data:");
+        if (isDataUrl) {
+          // Video was loaded via file picker as data URL — write to temp file
+          const dataUrl = fileField.split("::").slice(1).join("::");
+          const appData = await window.electronAPI.app.getPath("userData");
+          videoPath = `${appData}/pipeline_frames/temp_video_${Date.now()}.mp4`;
+          await window.electronAPI.fs.mkdir(`${appData}/pipeline_frames`);
+          await window.electronAPI.fs.writeDataUrl(videoPath, dataUrl);
+        } else {
+          videoPath = fileField;
+        }
+
+        // Extract frames to temp directory
+        const appData = await window.electronAPI.app.getPath("userData");
+        const outputDir = `${appData}/pipeline_frames/video_load_${nodeId}_${Date.now()}`;
+        await window.electronAPI.fs.mkdir(outputDir);
+
         set({
           nodes: updateNode(get().nodes, nodeId, () => ({
-            previewUrl: blobUrl,
-            outputData: { progress: `Frame ${idx + 1}/${total}` },
+            outputData: { progress: "Extracting frames with ffmpeg..." },
           })),
         });
-      })
-        .then((frames) => {
+
+        const resizeArg = maxRes > 0 ? `${maxRes}:-2` : undefined;
+        const result = await ffmpeg.extractFrames({
+          videoPath,
+          outputDir,
+          fps,
+          maxFrames: maxFrames > 0 ? maxFrames : undefined,
+          resize: resizeArg,
+        });
+
+        if (!result.success || !result.frameCount || result.frameCount === 0) {
+          console.warn("[Pipeline] ffmpeg extraction failed:", result.error);
+          return null;
+        }
+
+        // Read extracted frames as data URLs
+        const frameCount = result.frameCount;
+        const frames: string[] = [];
+        for (let i = 1; i <= frameCount; i++) {
+          const filename = `frame_${String(i).padStart(5, "0")}.jpg`;
+          const dataUrl = await window.electronAPI.fs.readFileAsDataUrl(`${outputDir}/${filename}`);
+          frames.push(dataUrl);
+          if (i % 10 === 0 || i === frameCount) {
+            set({
+              nodes: updateNode(get().nodes, nodeId, () => ({
+                previewUrl: dataUrl,
+                outputData: { progress: `Loading frame ${i}/${frameCount}` },
+              })),
+            });
+          }
+        }
+        return frames;
+      };
+
+      tryFfmpegExtract()
+        .then(async (frames) => {
+          // Fall back to browser extraction if ffmpeg failed
+          if (!frames || frames.length === 0) {
+            const videoSrc = fileField.includes("data:") ? fileField.split("::").slice(1).join("::") : fileField;
+            const browserFps = fps;
+            const browserMax = maxFrames > 0 ? maxFrames : 900; // cap browser fallback
+            frames = await extractVideoFrames(videoSrc, browserFps, browserMax, "image/jpeg", 0.85, maxRes, (blobUrl, idx, total) => {
+              set({
+                nodes: updateNode(get().nodes, nodeId, () => ({
+                  previewUrl: blobUrl,
+                  outputData: { progress: `Frame ${idx + 1}/${total}` },
+                })),
+              });
+            });
+          }
+
           set({
             nodes: updateNode(get().nodes, nodeId, () => ({
               processing: false,
-              previewUrl: frames[0],
-              outputData: { images: frames, count: frames.length, fps },
+              previewUrl: frames![0],
+              outputData: { images: frames!, count: frames!.length, fps },
             })),
           });
           // Propagate frames downstream
@@ -1350,9 +1423,9 @@ export const usePipelineStore = create<PipelineState>()(persist((set, get) => ({
               const sData = JSON.parse(atob(edge.sourceHandle ?? ""));
               const outputTypes = sData.outputTypes?.map((t: string) => t.toLowerCase()) ?? [];
               if (outputTypes.includes("imagelist")) {
-                processBatchNodeChain(edge.target, frames, get, set);
-              } else if (outputTypes.includes("image") && frames[0]) {
-                processNodeChain(edge.target, frames[0], get, set);
+                processBatchNodeChain(edge.target, frames!, get, set);
+              } else if (outputTypes.includes("image") && frames![0]) {
+                processNodeChain(edge.target, frames![0], get, set);
               }
             } catch { /* skip */ }
           }

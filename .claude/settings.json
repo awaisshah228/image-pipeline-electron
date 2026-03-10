@@ -3,6 +3,9 @@
     "allow": [
       "Bash(git push origin main)",
       "Bash(git push origin packaging/electron-forge)"
+    ],
+    "additionalDirectories": [
+      "/Users/awaisshah228/Documents/coding/ai-diagram-generator/src/lib/image-pipeline"
     ]
   }
 }
